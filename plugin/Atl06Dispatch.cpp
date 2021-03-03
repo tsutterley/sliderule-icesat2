@@ -55,11 +55,11 @@
  * INCLUDES
  ******************************************************************************/
 
-#include "icesat2.h"
-#include "core.h"
-
 #include <math.h>
 #include <float.h>
+
+#include "core.h"
+#include "icesat2.h"
 
 /******************************************************************************
  * STATIC DATA

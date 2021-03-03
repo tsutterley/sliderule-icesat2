@@ -26,13 +26,14 @@
 
 #include <atomic>
 
-#include "GTArray.h"
-#include "lua_parms.h"
 #include "List.h"
 #include "LuaObject.h"
 #include "RecordObject.h"
 #include "MsgQ.h"
 #include "OsApi.h"
+
+#include "GTArray.h"
+#include "lua_parms.h"
 
 /******************************************************************************
  * ATL03 READER

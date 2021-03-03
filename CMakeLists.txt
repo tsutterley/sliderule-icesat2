@@ -21,10 +21,6 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-###################
-# Project Options #
-###################
-
 set (CMAKE_SKIP_BUILD_RPATH FALSE)
 set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set (CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
@@ -39,12 +35,11 @@ add_library (icesat2 MODULE "")
 set_target_properties (icesat2 PROPERTIES OUTPUT_NAME icesat2)
 set_target_properties (icesat2 PROPERTIES PREFIX "")
 
+# Prerequisites #
+find_package (Lua "5.3")
+
 # Version Information #
 file(STRINGS ${PROJECT_SOURCE_DIR}/version.txt TGTVER)
-
-# Prefer libraries installed in /usr/local
-INCLUDE_DIRECTORIES(/usr/local/include)
-LINK_DIRECTORIES(/usr/local/lib)
 
 # Set Environment Variables
 set (INSTALLDIR /usr/local CACHE STRING "Installation directory for library and executables")
@@ -52,8 +47,8 @@ set (CONFDIR ${INSTALLDIR}/etc/sliderule)
 set (RUNTIMEDIR ${CONFDIR} CACHE STRING "Runtime directory for plugins and configuration scripts")
 
 # Compile Definitions #
-target_compile_definitions (sliderule PUBLIC BINID="${TGTVER}")
-target_compile_definitions (sliderule PUBLIC CONFIGPATH="${RUNTIMEDIR}")
+target_compile_definitions (icesat2 PUBLIC BINID="${TGTVER}")
+target_compile_definitions (icesat2 PUBLIC CONFIGPATH="${RUNTIMEDIR}")
 
 # Source Files #
 target_sources(icesat2
@@ -69,6 +64,8 @@ target_sources(icesat2
 # Include Directories #
 target_include_directories (icesat2
     PUBLIC
+        ${INSTALLDIR}/include/sliderule
+        ${LUA_INCLUDE_DIR}
         $<INSTALL_INTERFACE:${INCDIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>/plugin
 )

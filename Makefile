@@ -2,6 +2,8 @@ ROOT = $(shell pwd)
 STAGE = stage
 RUNTIME = /usr/local/etc/sliderule
 SLIDERULE = $(ROOT)/../sliderule
+SERVER = build/server
+PLUGIN = build/plugin
 
 DOCKERTAG ?= icesat2sliderule/sliderule:latest
 
@@ -18,39 +20,41 @@ all: build
 
 # Configuration Targets #
 
-config: server-config plugin-config
+config: config-server config-plugin
 
-server-config:
-	mkdir -p server-build
-	cd server-build; cmake -DCMAKE_BUILD_TYPE=Debug $(ICESAT2CFG) $(SLIDERULE)
+config-server:
+	mkdir -p $(SERVER)
+	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Debug $(ICESAT2CFG) $(SLIDERULE)
 
-plugin-config:
-	mkdir -p plugin-build
-	cd plugin-build; cmake -DCMAKE_BUILD_TYPE=Debug ..
+config-plugin:
+	mkdir -p $(PLUGIN)
+	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Debug ../..
 
 
 # Build Targets #
 
-build: server-build plugin-build
+build: build-server build-plugin
 
-server-build:
-	make -j4 -C server-build
+build-server:
+	make -j4 -C $(SERVER)
 
-plugin-build:
-	make -j4 -C plugin-build
+build-plugin:
+	make -j4 -C $(PLUGIN)
 
 
 # Install Targets #
 
-install: server-install plugin-install
+install: install-server install-plugin
 
-server-install:
-	make -C server-build install
+install-server:
+	make -C $(SERVER) install
 
-plugin-install:
-	make -C build install
-	cp asset_directory.csv $(RUNTIME)
-	cp empty.index $(RUNTIME)
+install-plugin:
+	make -C $(PLUGIN) install
+	cp config/asset_directory.csv $(RUNTIME)
+	cp config/empty.index $(RUNTIME)
+	cp config/plugins.conf $(RUNTIME)
+
 
 # Run Targets #
 
@@ -106,6 +110,6 @@ clean:
 	- rm aws_sdk_*.log
 
 distclean:
-	- rm -Rf server-build
-	- rm -Rf plugin-build
+	- rm -Rf $(SERVER)
+	- rm -Rf $(PLUGIN)
 	- rm -Rf $(STAGE)
