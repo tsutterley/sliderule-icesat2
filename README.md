@@ -21,14 +21,41 @@ For a development version of SlideRule that is run locally:
 $ make config
 $ make
 $ sudo make install
-$ make run-stand-alone
+$ make run
 ```
 
 For a production version of SlideRule that is run in a docker container:
 ```bash
-$ make docker-image
-$ make run-docker
+$ make production-docker
+$ make production-run
 ```
+
+#### Installing Docker
+
+The official Docker installation instructions found at https://docs.docker.com/engine/install/ubuntu/.
+
+For Ubuntu 20.04, Docker can be installed with the following commands:
+```bash
+$ sudo apt install docker.io
+```
+
+In order to run docker without having to be root, use the following commands:
+```bash
+$ sudo usermod -aG docker {username}
+$ newgrp docker # apply group to user
+```
+
+#### Changing how SlideRule is run in a Docker container
+
+```bash
+$ docker run -it --rm --name=sliderule-app -v /data:/data -p 9081:9081 sliderule-application /usr/local/scripts/apps/server.lua {config.json}
+```
+
+The command above runs the server application inside the Docker container and can be configured in the following ways:
+* A script other than `/usr/local/scripts/apps/server.lua` can be passed to the SlideRule executable running inside the Docker container
+* The {config.json} file provided to the server.lua script can be used to change server settings
+* Environment variables can be passed via `-e {parameter=value}` on the command line to docker
+* Different local files and directories can be mapped in via `-v {source abs. path}:{destination abs. path}` on the command line to docker
 
 
 ## III. Setting Up A Python Environment
