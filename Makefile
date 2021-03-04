@@ -2,8 +2,8 @@ ROOT = $(shell pwd)
 STAGE = $(ROOT)/stage
 RUNTIME = /usr/local/etc/sliderule
 SLIDERULE = $(ROOT)/../sliderule
-SERVER = build/server
-PLUGIN = build/plugin
+SERVER = $(ROOT)/build/server
+PLUGIN = $(ROOT)/build/plugin
 
 DOCKERTAG ?= icesat2sliderule/sliderule:latest
 
@@ -57,7 +57,7 @@ install-plugin:
 # Run Targets #
 
 run:
-	sliderule $(SLIDERULE)/plugins/icesat2/apps/server.lua config.json
+	sliderule apps/server.lua config/config.json
 
 
 # Production Targets #
@@ -88,10 +88,10 @@ production-docker: distclean
 	chmod +x $(STAGE)/scripts/apps/docker-entrypoint.sh
 	# copy over plugin tests #
 	mkdir -p $(STAGE)/plugins/icesat2/tests
-	cp $(SLIDERULE)/plugins/icesat2/tests/* $(STAGE)/plugins/icesat2/tests
+	cp tests/* $(STAGE)/plugins/icesat2/tests
 	# copy over plugin apps #
 	mkdir -p $(STAGE)/plugins/icesat2/apps
-	cp $(SLIDERULE)/plugins/icesat2/apps/* $(STAGE)/plugins/icesat2/apps
+	cp apps/* $(STAGE)/plugins/icesat2/apps
 	# build image #
 	cd $(STAGE); docker build -t $(DOCKERTAG) .
 
