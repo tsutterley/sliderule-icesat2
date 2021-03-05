@@ -51,6 +51,7 @@ target_compile_definitions (icesat2 PUBLIC BINID="${TGTVER}")
 target_compile_definitions (icesat2 PUBLIC CONFIGPATH="${RUNTIMEDIR}")
 target_compile_definitions (icesat2 PUBLIC _GNU_)
 target_compile_definitions (icesat2 PUBLIC __LE__)
+target_compile_definitions (icesat2 PUBLIC _LINUX_)
 
 # Source Files #
 target_sources(icesat2

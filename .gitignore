@@ -30,5 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Application Specific
 build/
 stage/
