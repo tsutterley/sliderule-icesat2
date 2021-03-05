@@ -49,6 +49,8 @@ set (RUNTIMEDIR ${CONFDIR} CACHE STRING "Runtime directory for plugins and confi
 # Compile Definitions #
 target_compile_definitions (icesat2 PUBLIC BINID="${TGTVER}")
 target_compile_definitions (icesat2 PUBLIC CONFIGPATH="${RUNTIMEDIR}")
+target_compile_definitions (icesat2 PUBLIC _GNU_)
+target_compile_definitions (icesat2 PUBLIC __LE__)
 
 # Source Files #
 target_sources(icesat2
