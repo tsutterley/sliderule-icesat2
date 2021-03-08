@@ -13,52 +13,60 @@ SERVERCFG += -DUSE_H5_PACKAGE=ON
 SERVERCFG += -DUSE_LEGACY_PACKAGE=OFF
 SERVERCFG += -DUSE_CCSDS_PACKAGE=OFF
 
-all: build
+all: plugin-config plugin-build
 
+# Plugin Targets #
 
-# Configuration Targets #
-
-config: config-server config-plugin
-
-config-server:
-	mkdir -p $(SERVER)
-	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Debug $(SERVERCFG) $(SLIDERULE)
-
-config-plugin:
+plugin-config:
 	mkdir -p $(PLUGIN)
-	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Debug $(ROOT)
+	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Release $(ROOT)
 
-
-# Build Targets #
-
-build: build-server build-plugin
-
-build-server:
-	make -j4 -C $(SERVER)
-
-build-plugin:
+plugin-build:
 	make -j4 -C $(PLUGIN)
 
-
-# Install Targets #
-
-install: install-server install-plugin
-
-install-server:
-	make -C $(SERVER) install
-
-install-plugin:
+plugin-install:
 	make -C $(PLUGIN) install
 	cp config/asset_directory.csv $(RUNTIME)
 	cp config/empty.index $(RUNTIME)
 	cp config/plugins.conf $(RUNTIME)
 
+# Server Targets #
 
-# Run Targets #
+server-config:
+	mkdir -p $(SERVER)
+	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Release $(SERVERCFG) $(SLIDERULE)
 
-run:
-	sliderule apps/server.lua config/config.json
+server-build:
+	make -j4 -C $(SERVER)
 
+server-install:
+	make -C $(SERVER) install
+
+# Development Targets #
+
+development:
+	# configure server #
+	mkdir -p $(SERVER)
+	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Debug $(SERVERCFG) -DINSTALLDIR=$(STAGE) $(SLIDERULE)
+	# configure plugin #
+	mkdir -p $(PLUGIN)
+	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Debug -DINSTALLDIR=$(STAGE) $(ROOT)
+	# build and install server #
+	make -j4 -C $(SERVER)
+	make -C $(SERVER) install
+	# build and install plugin #
+	make -j4 -C $(PLUGIN)
+	make -C $(PLUGIN) install
+	cp config/asset_directory.csv $(STAGE)/etc/sliderule
+	cp config/empty.index $(STAGE)/etc/sliderule
+	cp config/plugins.conf $(STAGE)/etc/sliderule
+
+script=
+development-test:
+	$(STAGE)/bin/sliderule $(script)
+
+development-run:
+	$(STAGE)/bin/sliderule apps/server.lua config/config.json
 
 # Production Targets #
 
@@ -70,7 +78,7 @@ production-docker: distclean
 	make -C $(SERVER) install
 	# build and install plugin into staging #
 	mkdir -p $(PLUGIN)
-	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Release -DINSTALLDIR=$(STAGE) -DRUNTIMEDIR=$(RUNTIME) $(ROOT)
+	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Release -DINSTALLDIR=$(STAGE) $(ROOT)
 	make -j4 $(PLUGIN)
 	make -C $(PLUGIN) install
 	# copy over dockerfile #

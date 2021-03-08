@@ -11,21 +11,6 @@ cmake_minimum_required (VERSION 3.13.0) # The minimum CMake version is chosen to
 cmake_policy(SET CMP0079 NEW) # add link library to target which is not built in this directory
 cmake_policy(SET CMP0053 NEW) # simplified variable escape processing (recommended by cmake)
 
-# Set a default build type if none was specified
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    set(default_build_type "Release")
-    if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-      set(default_build_type "Debug")
-    endif()
-    message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
-    set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING "Choose the type of build." FORCE)
-endif()
-
-set (CMAKE_SKIP_BUILD_RPATH FALSE)
-set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set (CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
-set (CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
-
 ###################
 # ICESat-2 Plugin #
 ###################
@@ -44,11 +29,9 @@ file(STRINGS ${PROJECT_SOURCE_DIR}/version.txt TGTVER)
 # Set Environment Variables
 set (INSTALLDIR /usr/local CACHE STRING "Installation directory for library and executables")
 set (CONFDIR ${INSTALLDIR}/etc/sliderule)
-set (RUNTIMEDIR ${CONFDIR} CACHE STRING "Runtime directory for plugins and configuration scripts")
 
 # Compile Definitions #
 target_compile_definitions (icesat2 PUBLIC BINID="${TGTVER}")
-target_compile_definitions (icesat2 PUBLIC CONFIGPATH="${RUNTIMEDIR}")
 target_compile_definitions (icesat2 PUBLIC _GNU_)
 target_compile_definitions (icesat2 PUBLIC __LE__)
 target_compile_definitions (icesat2 PUBLIC _LINUX_)
@@ -69,7 +52,6 @@ target_include_directories (icesat2
     PUBLIC
         ${INSTALLDIR}/include/sliderule
         ${LUA_INCLUDE_DIR}
-        $<INSTALL_INTERFACE:${INCDIR}>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>/plugin
 )
 
