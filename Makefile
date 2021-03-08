@@ -1,3 +1,7 @@
+# example use:
+#	$ make
+#	$ sudo make plugin-install
+
 ROOT = $(shell pwd)
 STAGE = $(ROOT)/stage
 RUNTIME = /usr/local/etc/sliderule
