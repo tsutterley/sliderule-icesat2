@@ -27,10 +27,10 @@ if __name__ == '__main__':
 
     # Override region of interest
     if len(sys.argv) > 1:
-        with open(sys.argv[1]) as regionfile:
-            if sys.argv[1].find(".geojson") > 1:
-                region = icesat2.toregion(regionfile)
-            else:
+        if sys.argv[1].find(".geojson") > 1:
+            region = icesat2.toregion(sys.argv[1])
+        else:
+            with open(sys.argv[1]) as regionfile:
                 region = json.load(regionfile)["region"]
 
     # Override dataset
