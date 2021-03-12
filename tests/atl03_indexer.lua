@@ -8,10 +8,7 @@ csv = require("csv")
 local info = debug.getinfo(1,'S');
 local td = info.source:sub(2, string.find(info.source, "/[^/]*$"))
 
-console.logger:config(core.INFO)
-
 assets = asset.loaddir(td.."/asset_directory.csv")
-
 
 -- Unit Test --
 

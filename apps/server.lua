@@ -19,7 +19,7 @@ local port = cfgtbl["server_port"] or 9081
 local asset_directory = cfgtbl["asset_directory"] or nil
 
 -- Configure Logging --
-console.logger:config(loglvl)
+sys.setlvl(core.LOG, loglvl)
 
 -- Configure Assets --
 assets = asset.loaddir(asset_directory, true)

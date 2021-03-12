@@ -3,7 +3,6 @@ local console = require("console")
 
 -- Setup --
 
---console.logger:config(core.INFO)
 t = icesat2.ut_atl06()
 
 -- Unit Test --

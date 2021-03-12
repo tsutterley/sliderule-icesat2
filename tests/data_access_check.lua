@@ -4,8 +4,6 @@ local filename = arg[1] or "file:///data/ATLAS/ATL03_20181019065445_03150111_003
 
 -- Setup --
 
-print(filename)
-console.logger:config(core.INFO)
 local recq = msg.subscribe("recq")
 
 -- Test --

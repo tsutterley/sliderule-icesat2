@@ -2,10 +2,6 @@ local runner = require("test_executive")
 console = require("console")
 json = require("json")
 
--- Setup --
-
-console.logger:config(core.INFO)
-
 -- Unit Test --
 
 print('\n------------------\nTest01: Atl03 Reader \n------------------')

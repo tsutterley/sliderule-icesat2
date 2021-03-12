@@ -330,8 +330,8 @@ void* Atl03Reader::atl06Thread (void* parm)
     stats_t local_stats = {0, 0, 0, 0, 0};
 
     /* Start Trace */
-    uint32_t trace_id = start_trace_ext(reader->traceId, "atl03_reader", "{\"url\":\"%s\", \"track\":%d}", url, track);
-    TraceLib::stashId (trace_id); // set thread specific trace id for H5Api
+    uint32_t trace_id = start_trace(INFO, reader->traceId, "atl03_reader", "{\"url\":\"%s\", \"track\":%d}", url, track);
+    EventLib::stashId (trace_id); // set thread specific trace id for H5Api
 
     /* Create H5 Context */
     H5Api::context_t* context = new H5Api::context_t;
@@ -612,7 +612,7 @@ void* Atl03Reader::atl06Thread (void* parm)
     delete info;
 
     /* Stop Trace */
-    stop_trace(trace_id);
+    stop_trace(INFO, trace_id);
 
     /* Return */
     return NULL;

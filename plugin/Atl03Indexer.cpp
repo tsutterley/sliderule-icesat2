@@ -199,8 +199,8 @@ void* Atl03Indexer::indexerThread (void* parm)
     bool complete = false;
 
     /* Start Trace */
-    uint32_t trace_id = start_trace_ext(indexer->traceId, "atl03_indexer", "{\"tag\":\"%s\"}", indexer->getName());
-    TraceLib::stashId (trace_id); // set thread specific trace id for H5Lib
+    uint32_t trace_id = start_trace(CRITICAL, indexer->traceId, "atl03_indexer", "{\"tag\":\"%s\"}", indexer->getName());
+    EventLib::stashId (trace_id); // set thread specific trace id for H5Lib
 
     /* Build Prefix */
     char prefix[MAX_STR_SIZE];
@@ -301,7 +301,7 @@ void* Atl03Indexer::indexerThread (void* parm)
     indexer->threadMut.unlock();
 
     /* Stop Trace */
-    stop_trace(trace_id);
+    stop_trace(CRITICAL, trace_id);
 
     /* Return */
     return NULL;
