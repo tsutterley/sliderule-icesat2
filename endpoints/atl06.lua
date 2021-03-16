@@ -50,9 +50,9 @@ end
 
 -- Post Initial Status Progress --
 if not subset_only then
-    userlog:sendlog(core.INFO, string.format("atl06 processing initiated on %s ...\n", resource))
+    userlog:sendlog(core.INFO, string.format("atl06 processing initiated on %s ...", resource))
 else
-    userlog:sendlog(core.INFO, string.format("atl06 subsetting only for %s ...\n", resource))
+    userlog:sendlog(core.INFO, string.format("atl06 subsetting only for %s ...", resource))
 end
 
 -- ATL06 Dispatch Algorithm --
@@ -84,7 +84,7 @@ while not wait_obj:waiton(interval) do
     duration = duration + interval
     -- Check for Timeout --
     if timeout > 0 and duration == timeout then
-        userlog:sendlog(core.INFO, string.format("request for %s timed-out after %d seconds\n", resource, duration / 1000))
+        userlog:sendlog(core.INFO, string.format("request for %s timed-out after %d seconds", resource, duration / 1000))
         return
     end
     if not subset_only then
@@ -93,17 +93,17 @@ while not wait_obj:waiton(interval) do
         local atl06_stats = atl06_algo:stats(false)
         -- Dispay Progress --
         if atl06_stats.h5atl03 == 0 then
-            userlog:sendlog(core.INFO, string.format("... continuing to read %s (after %d seconds)\n", resource, duration / 1000))
+            userlog:sendlog(core.INFO, string.format("... continuing to read %s (after %d seconds)", resource, duration / 1000))
         else
-            userlog:sendlog(core.INFO, string.format("processed %d out of %d segments in %s (after %d seconds)\n", atl06_stats.h5atl03, atl03_stats.read, resource, duration / 1000))
+            userlog:sendlog(core.INFO, string.format("processed %d out of %d segments in %s (after %d seconds)", atl06_stats.h5atl03, atl03_stats.read, resource, duration / 1000))
         end
     else
         local atl03_stats = atl03_reader:stats(false)
-        userlog:sendlog(core.INFO, string.format("read %d segments in %s (after %d seconds)\n", atl03_stats.read, resource, duration / 1000))
+        userlog:sendlog(core.INFO, string.format("read %d segments in %s (after %d seconds)", atl03_stats.read, resource, duration / 1000))
     end
 
 end
 
 -- Processing Complete
-userlog:sendlog(core.INFO, string.format("processing of %s complete\n", resource))
+userlog:sendlog(core.INFO, string.format("processing of %s complete", resource))
 return

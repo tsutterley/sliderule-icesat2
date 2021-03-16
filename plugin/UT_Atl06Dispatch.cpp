@@ -66,7 +66,7 @@ int UT_Atl06Dispatch::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating %s: %s\n", LuaMetaName, e.what());
+        mlog(CRITICAL, "Error creating %s: %s", LuaMetaName, e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -107,7 +107,7 @@ int UT_Atl06Dispatch::luaLsfTest (lua_State* L)
         Atl06Dispatch::lsf_t fit1 = Atl06Dispatch::lsf(v1, l1);
         if(fit1.intercept != 0.0 || fit1.slope != 2.0)
         {
-            mlog(CRITICAL, "Failed LSF test01: %lf, %lf\n", fit1.intercept, fit1.slope);
+            mlog(CRITICAL, "Failed LSF test01: %lf, %lf", fit1.intercept, fit1.slope);
             tests_passed = false;
         }
 
@@ -117,7 +117,7 @@ int UT_Atl06Dispatch::luaLsfTest (lua_State* L)
         Atl06Dispatch::lsf_t fit2 = Atl06Dispatch::lsf(v2, l2);
         if(fit2.intercept != 3.0 || fit2.slope != 1.0)
         {
-            mlog(CRITICAL, "Failed LSF test02: %lf, %lf\n", fit2.intercept, fit2.slope);
+            mlog(CRITICAL, "Failed LSF test02: %lf, %lf", fit2.intercept, fit2.slope);
             tests_passed = false;
         }
 
@@ -126,7 +126,7 @@ int UT_Atl06Dispatch::luaLsfTest (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error executing test %s: %s\n", __FUNCTION__, e.what());
+        mlog(CRITICAL, "Error executing test %s: %s", __FUNCTION__, e.what());
     }
 
     /* Return Status */
@@ -152,7 +152,7 @@ int UT_Atl06Dispatch::luaSortTest (lua_State* L)
         {
             if(a1[i].r != b1[i].r)
             {
-                mlog(CRITICAL, "Failed sort test01 at: %d\n", i);
+                mlog(CRITICAL, "Failed sort test01 at: %d", i);
                 tests_passed = false;            
                 break;
             }
@@ -166,7 +166,7 @@ int UT_Atl06Dispatch::luaSortTest (lua_State* L)
         {
             if(a2[i].r != b2[i].r)
             {
-                mlog(CRITICAL, "Failed sort test02 at: %d\n", i);
+                mlog(CRITICAL, "Failed sort test02 at: %d", i);
                 tests_passed = false;            
                 break;
             }
@@ -180,7 +180,7 @@ int UT_Atl06Dispatch::luaSortTest (lua_State* L)
         {
             if(a3[i].r != b3[i].r)
             {
-                mlog(CRITICAL, "Failed sort test03 at: %d\n", i);
+                mlog(CRITICAL, "Failed sort test03 at: %d", i);
                 tests_passed = false;            
                 break;
             }
@@ -191,7 +191,7 @@ int UT_Atl06Dispatch::luaSortTest (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error executing test %s: %s\n", __FUNCTION__, e.what());
+        mlog(CRITICAL, "Error executing test %s: %s", __FUNCTION__, e.what());
     }
 
     /* Return Status */

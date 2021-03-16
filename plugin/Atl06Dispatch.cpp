@@ -129,7 +129,7 @@ int Atl06Dispatch::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating %s: %s\n", LuaMetaName, e.what());
+        mlog(CRITICAL, "Error creating %s: %s", LuaMetaName, e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -142,7 +142,7 @@ void Atl06Dispatch::init (void)
     RecordObject::recordDefErr_t el_rc = RecordObject::defineRecord(elRecType, NULL, sizeof(elevation_t), elRecDef, sizeof(elRecDef) / sizeof(RecordObject::fieldDef_t), 16);
     if(el_rc != RecordObject::SUCCESS_DEF)
     {
-        mlog(CRITICAL, "Failed to define %s: %d\n", elRecType, el_rc);
+        mlog(CRITICAL, "Failed to define %s: %d", elRecType, el_rc);
     }
 
     /*
@@ -153,7 +153,7 @@ void Atl06Dispatch::init (void)
     RecordObject::recordDefErr_t at_rc = RecordObject::defineRecord(atRecType, NULL, offsetof(atl06_t, elevation[1]), atRecDef, sizeof(atRecDef) / sizeof(RecordObject::fieldDef_t), 16);
     if(at_rc != RecordObject::SUCCESS_DEF)
     {
-        mlog(CRITICAL, "Failed to define %s: %d\n", atRecType, at_rc);
+        mlog(CRITICAL, "Failed to define %s: %d", atRecType, at_rc);
     }
 }
 
@@ -579,7 +579,7 @@ int Atl06Dispatch::luaStats (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error configuring %s: %s\n", LuaMetaName, e.what());
+        mlog(CRITICAL, "Error configuring %s: %s", LuaMetaName, e.what());
     }
 
     /* Return Status */

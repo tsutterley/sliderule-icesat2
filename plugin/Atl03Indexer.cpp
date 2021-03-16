@@ -99,7 +99,7 @@ int Atl03Indexer::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating Atl03Indexer: %s\n", e.what());
+        mlog(CRITICAL, "Error creating Atl03Indexer: %s", e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -112,7 +112,7 @@ void Atl03Indexer::init (void)
     RecordObject::recordDefErr_t rc = RecordObject::defineRecord(recType, NULL, sizeof(index_t), recDef, sizeof(recDef) / sizeof(RecordObject::fieldDef_t), 16);
     if(rc != RecordObject::SUCCESS_DEF)
     {
-        mlog(CRITICAL, "Failed to define %s: %d\n", recType, rc);
+        mlog(CRITICAL, "Failed to define %s: %d", recType, rc);
     }
 }
 
@@ -131,7 +131,7 @@ Atl03Indexer::Atl03Indexer (lua_State* L, Asset* _asset, List<const char*>* _res
     /* Check Num Threads */
     if(num_threads < 0 or num_threads > MAX_NUM_THREADS)
     {
-        mlog(CRITICAL, "Invalid number of threads supplied: %d. Setting to default: %d.\n", num_threads, DEFAULT_NUM_THREADS);
+        mlog(CRITICAL, "Invalid number of threads supplied: %d. Setting to default: %d.", num_threads, DEFAULT_NUM_THREADS);
         num_threads = DEFAULT_NUM_THREADS;
     }
 
@@ -274,14 +274,14 @@ void* Atl03Indexer::indexerThread (void* parm)
                 int post_status = MsgQ::STATE_ERROR;
                 while(indexer->active && (post_status = indexer->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) <= 0)
                 {
-                    mlog(DEBUG, "Atl03 indexer failed to post to stream %s: %d\n", indexer->outQ->getName(), post_status);
+                    mlog(DEBUG, "Atl03 indexer failed to post to stream %s: %d", indexer->outQ->getName(), post_status);
                 }
             }
         }
     }
     catch(const std::exception& e)
     {
-        mlog(CRITICAL, "Unable to process resources in %s: %s\n", indexer->getName(), e.what());
+        mlog(CRITICAL, "Unable to process resources in %s: %s", indexer->getName(), e.what());
     }
 
     /* Free Context */
@@ -332,7 +332,7 @@ int Atl03Indexer::luaStats (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error configuring %s: %s\n", LuaMetaName, e.what());
+        mlog(CRITICAL, "Error configuring %s: %s", LuaMetaName, e.what());
     }
 
     /* Return Status */

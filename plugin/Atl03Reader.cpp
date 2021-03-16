@@ -104,7 +104,7 @@ int Atl03Reader::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating Atl03Reader: %s\n", e.what());
+        mlog(CRITICAL, "Error creating Atl03Reader: %s", e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -117,13 +117,13 @@ void Atl03Reader::init (void)
     RecordObject::recordDefErr_t ex_rc = RecordObject::defineRecord(exRecType, "track", sizeof(extent_t), exRecDef, sizeof(exRecDef) / sizeof(RecordObject::fieldDef_t), 16);
     if(ex_rc != RecordObject::SUCCESS_DEF)
     {
-        mlog(CRITICAL, "Failed to define %s: %d\n", exRecType, ex_rc);
+        mlog(CRITICAL, "Failed to define %s: %d", exRecType, ex_rc);
     }
 
     RecordObject::recordDefErr_t ph_rc = RecordObject::defineRecord(phRecType, NULL, sizeof(extent_t), phRecDef, sizeof(phRecDef) / sizeof(RecordObject::fieldDef_t), 16);
     if(ph_rc != RecordObject::SUCCESS_DEF)
     {
-        mlog(CRITICAL, "Failed to define %s: %d\n", phRecType, ph_rc);
+        mlog(CRITICAL, "Failed to define %s: %d", phRecType, ph_rc);
     }
 }
 
@@ -358,7 +358,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         GTArray<float>      bckgrd_rate         (url, track, "bckgrd_atlas/bckgrd_rate", context);
 
         /* Early Tear Down of Context */
-        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes\n", url, (unsigned long)context->read_rqsts, (unsigned long)context->bytes_read);
+        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", url, (unsigned long)context->read_rqsts, (unsigned long)context->bytes_read);
         delete context;
         context = NULL;
 
@@ -559,7 +559,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 while(reader->active && (post_status = reader->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) <= 0)
                 {
                     local_stats.extents_retried++; 
-                    mlog(DEBUG, "Atl03 reader failed to post to stream %s: %d\n", reader->outQ->getName(), post_status);
+                    mlog(DEBUG, "Atl03 reader failed to post to stream %s: %d", reader->outQ->getName(), post_status);
                 }
 
                 /* Update Statistics */
@@ -576,11 +576,11 @@ void* Atl03Reader::atl06Thread (void* parm)
             }
         }
 
-        mlog(CRITICAL, "Successfully processed resource %s track %d: %d/%d/%d extents\n", url, info->track, local_stats.extents_sent, local_stats.extents_filtered, local_stats.extents_dropped);
+        mlog(CRITICAL, "Successfully processed resource %s track %d: %d/%d/%d extents", url, info->track, local_stats.extents_sent, local_stats.extents_filtered, local_stats.extents_dropped);
     }
     catch(const std::exception& e)
     {
-        mlog(CRITICAL, "Unable to process resource %s track %d: %s\n", url, track, e.what());
+        mlog(CRITICAL, "Unable to process resource %s track %d: %s", url, track, e.what());
     }
 
     /* Tear Down Context */
@@ -654,7 +654,7 @@ int Atl03Reader::luaParms (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error returning parameters %s: %s\n", lua_obj->getName(), e.what());
+        mlog(CRITICAL, "Error returning parameters %s: %s", lua_obj->getName(), e.what());
     }
 
     /* Return Status */
@@ -702,7 +702,7 @@ int Atl03Reader::luaStats (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error returning stats %s: %s\n", lua_obj->getName(), e.what());
+        mlog(CRITICAL, "Error returning stats %s: %s", lua_obj->getName(), e.what());
     }
 
     /* Return Status */
