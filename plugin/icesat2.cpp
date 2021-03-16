@@ -107,6 +107,6 @@ void initicesat2 (void)
     LuaEngine::indicate(LUA_ICESAT2_LIBNAME, BINID);
 
     /* Display Status */
-    printf("%s plugin initialized (%s)\n", LUA_ICESAT2_LIBNAME, BINID);
+    print2term("%s plugin initialized (%s)\n", LUA_ICESAT2_LIBNAME, BINID);
 }
 }

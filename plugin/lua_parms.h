@@ -60,7 +60,7 @@
 #define LUA_PARM_STAGE_SUB                      "SUB"
 #define LUA_PARM_STAGE_RAW                      "RAW"
 #define LUA_PARM_STAGE_LSF                      "LSF"
-#define LUA_PARM_MAX_COORDS                     16
+#define LUA_PARM_MAX_COORDS                     32
 
 /******************************************************************************
  * TYPEDEFS

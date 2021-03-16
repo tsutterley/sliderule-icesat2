@@ -17,7 +17,11 @@ SERVERCFG += -DUSE_H5_PACKAGE=ON
 SERVERCFG += -DUSE_LEGACY_PACKAGE=OFF
 SERVERCFG += -DUSE_CCSDS_PACKAGE=OFF
 
-all: plugin-config plugin-build
+all: plugin-build
+
+config: plugin-config
+
+install: plugin-install
 
 # Plugin Targets #
 
@@ -65,9 +69,8 @@ development:
 	cp config/empty.index $(STAGE)/etc/sliderule
 	cp config/plugins.conf $(STAGE)/etc/sliderule
 
-script=
 development-test:
-	$(STAGE)/bin/sliderule $(script)
+	$(STAGE)/bin/sliderule apps/test_runner.lua
 
 development-run:
 	$(STAGE)/bin/sliderule apps/server.lua config/config.json
