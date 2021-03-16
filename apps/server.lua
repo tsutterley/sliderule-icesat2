@@ -6,7 +6,7 @@ local json = require("json")
 local cfgtbl = {}
 local json_input = arg[1]
 if json_input and string.match(json_input, ".json") then
-    sys.log(core.CRITICAL, string.format('Reading json file: %s\n', json_input))
+    sys.log(core.CRITICAL, string.format('Reading json file: %s', json_input))
     local f = io.open(json_input, "r")
     local content = f:read("*all")
     f:close()
@@ -14,7 +14,7 @@ if json_input and string.match(json_input, ".json") then
 end
 
 -- Pull Out Parameters --
-local loglvl = cfgtbl["loglvl"] or core.INFO
+local loglvl = sys.level(cfgtbl["loglvl"]) or core.INFO
 local port = cfgtbl["server_port"] or 9081
 local asset_directory = cfgtbl["asset_directory"] or nil
 
