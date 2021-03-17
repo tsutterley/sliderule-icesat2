@@ -35,6 +35,7 @@ plugin-build:
 plugin-install:
 	make -C $(PLUGIN) install
 	cp config/asset_directory.csv $(RUNTIME)
+	cp config/config-production.json $(RUNTIME)/config.json
 	cp config/empty.index $(RUNTIME)
 	cp config/plugins.conf $(RUNTIME)
 
@@ -73,7 +74,7 @@ development-test:
 	$(STAGE)/bin/sliderule apps/test_runner.lua
 
 development-run:
-	$(STAGE)/bin/sliderule apps/server.lua config/config.json
+	$(STAGE)/bin/sliderule apps/server.lua config/config-development.json
 
 # Production Targets #
 
@@ -92,7 +93,7 @@ production-docker: distclean
 	cp config/dockerfile.app $(STAGE)/Dockerfile
 	# copy over installation configuration #
 	cp config/plugins.conf $(STAGE)/etc/sliderule
-	cp config/config.json $(STAGE)/etc/sliderule
+	cp config/config-production.json $(STAGE)/etc/sliderule/config.json
 	cp config/asset_directory.csv $(STAGE)/etc/sliderule
 	cp config/empty.index $(STAGE)/etc/sliderule
 	# copy over scripts #

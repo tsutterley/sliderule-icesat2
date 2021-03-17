@@ -1,4 +1,4 @@
-local console = require("console")
+local global = require("global")
 local asset = require("asset")
 local json = require("json")
 
@@ -14,18 +14,25 @@ if json_input and string.match(json_input, ".json") then
 end
 
 -- Pull Out Parameters --
-local loglvl = sys.level(cfgtbl["loglvl"]) or core.INFO
+local logfmt = global.eval(cfgtbl["logfmt"]) or core.FMT_TEXT
+local loglvl = global.eval(cfgtbl["loglvl"]) or core.INFO
 local port = cfgtbl["server_port"] or 9081
 local asset_directory = cfgtbl["asset_directory"] or nil
 
 -- Configure Logging --
 sys.setlvl(core.LOG, loglvl)
+local monitor = core.monitor(core.LOG, loglvl, logfmt)
+monitor:name("LogMonitor")
+local dispatcher = core.dispatcher(core.MONITORQ)
+dispatcher:name("LogDispatcher")
+dispatcher:attach(monitor, "eventrec")
+dispatcher:run()
 
 -- Configure Assets --
 assets = asset.loaddir(asset_directory, true)
 
 -- Configure and Run Server --
-server = core.httpd(9081)
+server = core.httpd(port)
 server:name("HttpServer")
 endpoint = core.endpoint()
 endpoint:name("LuaEndpoint")
