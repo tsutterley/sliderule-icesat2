@@ -81,7 +81,7 @@ development-run:
 production-docker: distclean
 	# build and install server into staging #
 	mkdir -p $(SERVER)
-	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Release $(SERVERCFG) -DINSTALLDIR=$(STAGE) -DRUNTIMEDIR=$(RUNTIME) $(SLIDERULE)
+	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TERMINAL=OFF $(SERVERCFG) -DINSTALLDIR=$(STAGE) -DRUNTIMEDIR=$(RUNTIME) $(SLIDERULE)
 	make -j4 $(SERVER)
 	make -C $(SERVER) install
 	# build and install plugin into staging #
