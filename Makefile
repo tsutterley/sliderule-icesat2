@@ -9,6 +9,8 @@ SLIDERULE = $(ROOT)/../sliderule
 SERVER = $(ROOT)/build/server
 PLUGIN = $(ROOT)/build/plugin
 
+MYIP ?= $(shell (ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$$/\1/p'))
+
 DOCKERTAG ?= icesat2sliderule/sliderule:latest
 
 SERVERCFG := -DMAX_FREE_STACK_SIZE=1
@@ -112,7 +114,7 @@ production-docker: distclean
 	cd $(STAGE); docker build -t $(DOCKERTAG) .
 
 production-run:
-	docker run -it --rm --name=sliderule-app -v /etc/ssl/certs:/etc/ssl/certs -v /data:/data -p 9081:9081 --entrypoint /usr/local/scripts/apps/docker-entrypoint.sh $(DOCKERTAG)
+	docker run -it --rm --name=sliderule-app -e IPV4=$(MYIP) -v /etc/ssl/certs:/etc/ssl/certs -v /data:/data -p 9081:9081 --entrypoint /usr/local/scripts/apps/docker-entrypoint.sh $(DOCKERTAG)
 
 
 # Cleanup Targets #
