@@ -76,7 +76,7 @@ development-test:
 	$(STAGE)/bin/sliderule apps/test_runner.lua
 
 development-run:
-	$(STAGE)/bin/sliderule apps/server.lua config/config-development.json
+	IPV4=$(MYIP) $(STAGE)/bin/sliderule apps/server.lua config/config-development.json
 
 # Production Targets #
 
