@@ -58,7 +58,7 @@ server-install:
 development:
 	# configure server #
 	mkdir -p $(SERVER)
-	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Debug $(SERVERCFG) -DINSTALLDIR=$(STAGE) $(SLIDERULE)
+	cd $(SERVER); cmake -DCMAKE_BUILD_TYPE=Debug $(SERVERCFG) -DENABLE_TRACING=ON -DINSTALLDIR=$(STAGE) $(SLIDERULE)
 	# configure plugin #
 	mkdir -p $(PLUGIN)
 	cd $(PLUGIN); cmake -DCMAKE_BUILD_TYPE=Debug -DINSTALLDIR=$(STAGE) $(ROOT)
