@@ -83,3 +83,7 @@ The plugin supplies the following lua user data types:
 * `icesat2.atl03indexer(<asset>, <resource table>, <outq_name>, [<num threads>])`: ATL03 indexer base object
 * `icesat2.atl06(<outq name>)`: ATL06 dispatch object
 * `icesat2.ut_atl06()`: ATL06 dispatch unit test base object 
+
+## V. Licensing
+
+SlideRule is licensed under the 3-clause BSD license found in the LICENSE file at the root of this source tree.
