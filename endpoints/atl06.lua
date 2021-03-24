@@ -36,10 +36,9 @@ local timeout = rqst["timeout"] or core.PEND
 -- Check Stages --
 local recq = rspq .. "-atl03"
 local subset_only = false
-local stages = parms["stages"]
-if stages then
+if parms and parms["stages"] then
     -- Special Case for Only Subsetted ATL03 Data --
-    for index, value in ipairs(stages) do
+    for index, value in ipairs(parms["stages"]) do
         if value == "SUB" then
             subset_only = true
             recq = rspq -- send data directly to response

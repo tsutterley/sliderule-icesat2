@@ -13,6 +13,8 @@ MYIP ?= $(shell (ip route get 1 | sed -n 's/^.*src \([0-9.]*\) .*$$/\1/p'))
 
 DOCKERTAG ?= icesat2sliderule/sliderule:latest
 
+CLANG_OPT = -DCMAKE_USER_MAKE_RULES_OVERRIDE=$(SLIDERULE)/platforms/linux/ClangOverrides.txt -D_CMAKE_TOOLCHAIN_PREFIX=llvm-
+
 SERVERCFG := -DMAX_FREE_STACK_SIZE=1
 SERVERCFG += -DUSE_AWS_PACKAGE=ON
 SERVERCFG += -DUSE_H5_PACKAGE=ON
@@ -40,6 +42,11 @@ plugin-install:
 	cp config/config-production.json $(RUNTIME)/config.json
 	cp config/empty.index $(RUNTIME)
 	cp config/plugins.conf $(RUNTIME)
+
+plugin-scan:
+	mkdir -p $(PLUGIN)
+	cd $(PLUGIN); export CC=clang; export CXX=clang++; scan-build cmake $(CLANG_OPT) $(ROOT)
+	cd $(PLUGIN); scan-build -o scan-results make
 
 # Server Targets #
 
