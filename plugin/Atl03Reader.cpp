@@ -575,12 +575,10 @@ void* Atl03Reader::atl06Thread (void* parm)
                 delete record;
             }
         }
-
-        mlog(CRITICAL, "Successfully processed resource %s track %d: %d/%d/%d extents", url, info->track, local_stats.extents_sent, local_stats.extents_filtered, local_stats.extents_dropped);
     }
     catch(const std::exception& e)
     {
-        mlog(CRITICAL, "Unable to process resource %s track %d: %s", url, track, e.what());
+        mlog(CRITICAL, "Failure during processing of resource %s track %d: %s", url, track, e.what());
     }
 
     /* Tear Down Context */
@@ -600,6 +598,8 @@ void* Atl03Reader::atl06Thread (void* parm)
         reader->numComplete++;
         if(reader->numComplete == reader->threadCount)
         {
+            mlog(CRITICAL, "Completed processing resource %s", url);
+    
             /* Indicate End of Data */
             reader->outQ->postCopy("", 0);
             reader->signalComplete();

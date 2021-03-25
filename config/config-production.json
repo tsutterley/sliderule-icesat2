@@ -1,6 +1,6 @@
 {
-    "logfmt": "FMT_JSON",
-    "loglvl": "ERROR",
+    "event_format": "FMT_LOKI",
+    "event_level": "ERROR",
     "server_port": 9081,
     "asset_directory": "/usr/local/etc/sliderule/asset_directory.csv"
 }

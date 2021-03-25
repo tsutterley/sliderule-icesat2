@@ -14,17 +14,17 @@ if json_input and string.match(json_input, ".json") then
 end
 
 -- Pull Out Parameters --
-local logfmt = global.eval(cfgtbl["logfmt"]) or core.FMT_TEXT
-local loglvl = global.eval(cfgtbl["loglvl"]) or core.INFO
+local event_format = global.eval(cfgtbl["event_format"]) or core.FMT_TEXT
+local event_level = global.eval(cfgtbl["event_level"]) or core.INFO
 local port = cfgtbl["server_port"] or 9081
 local asset_directory = cfgtbl["asset_directory"] or nil
 
--- Configure Logging --
-sys.setlvl(core.LOG, loglvl)
-local monitor = core.monitor(core.LOG, loglvl, logfmt)
-monitor:name("LogMonitor")
+-- Configure Monitoring --
+sys.setlvl(core.LOG | core.TRACE | core.METRIC, event_level) -- set level globally
+local monitor = core.monitor(core.LOG, core.INFO, event_format) -- monitor only logs
+monitor:name("EventMonitor")
 local dispatcher = core.dispatcher(core.MONITORQ)
-dispatcher:name("LogDispatcher")
+dispatcher:name("EventDispatcher")
 dispatcher:attach(monitor, "eventrec")
 dispatcher:run()
 

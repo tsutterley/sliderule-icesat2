@@ -1,6 +1,6 @@
 {
-    "logfmt": "FMT_TEXT",
-    "loglvl": "INFO",
+    "event_format": "FMT_TEXT",
+    "event_level": "INFO",
     "server_port": 9081,
     "asset_directory": "/usr/local/etc/sliderule/asset_directory.csv"
 }
