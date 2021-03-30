@@ -1,7 +1,9 @@
-ICESat-2 (SlideRule Plugin)
+SlideRule ICESat-2 Plugin
 ===========================
 
-The ICESat-2 plugin provides science data processing algorithms for derived ATL06 data products.
+This SlideRule plugin includes algorithms for processing ICESat-2 data products.
+
+If you are a science user interested in processing ICESat-2 data with SlideRule, please see the [sliderule-python client](https://github.com/ICESat2-SlideRule/sliderule-python).
 
 ## I. Prerequisites
 
