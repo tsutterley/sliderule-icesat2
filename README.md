@@ -7,26 +7,22 @@ If you are a science user interested in processing ICESat-2 data with SlideRule,
 
 ## I. Prerequisites
 
-1. The base build environment must be setup as described in the SlideRule readme.  Follow the first three steps in the Quick Start section to install the necessary system packages, a recent version of cmake, and Docker.  See [SlideRule Readme: III. Quick Start](https://github.com/ICESat2-SlideRule/sliderule/blob/master/README.md#iii-quick-start).  
+1. The base build environment must be setup as described in the [SlideRule](https://github.com/ICESat2-SlideRule/sliderule) readme.  Follow the first three steps in the Quick Start section to install the necessary system packages.  See [SlideRule Readme: III. Quick Start](https://github.com/ICESat2-SlideRule/sliderule/blob/master/README.md#iii-quick-start).  
 
-2. Optionally install __Lttng__. See [Core Package Overview](https://github.com/ICESat2-SlideRule/sliderule/blob/master/packages/core/core.md) for installation instructions.
-
-3. Install __AWS SDK__. See [Install AWS SDK Library](https://github.com/ICESat2-SlideRule/sliderule/blob/master/packages/aws/aws.md) for installation instructions.
+2. Install __AWS SDK__. See [Install AWS SDK Library](https://github.com/ICESat2-SlideRule/sliderule/blob/master/packages/aws/aws.md) for installation instructions.
 
 
 ## II. Building
 
 Use the [Makefile](Makefile) to build and install the plugin.
 
-For a development version of SlideRule that is run locally:
+For a development version of SlideRule that includes the plugin and is run locally:
 ```bash
-$ make config
-$ make
-$ sudo make install
-$ make run
+$ make development
+$ make development-run
 ```
 
-For a production version of SlideRule that is run in a docker container:
+For a production version of SlideRule that is run in a docker container (this requires Docker, see below for installation instructions):
 ```bash
 $ make production-docker
 $ make production-run
