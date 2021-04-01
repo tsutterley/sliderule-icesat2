@@ -65,6 +65,8 @@ jobs:
        sudo mkdir -p /usr/local/include/sliderule
        sudo find sliderule -name "*.h" -exec cp {} /usr/local/include/sliderule/ \;
        sudo cp sliderule/platforms/linux/*.h /usr/local/include/sliderule/
+       sudo touch /usr/local/include/sliderule/platform.h
+       sudo chmod 777 /usr/local/include/sliderule/platform.h
        sudo echo "#define LIBID \"codeql\"" >> /usr/local/include/sliderule/platform.h
        sudo echo "#define CONFDIR \"/usr/local/etc/sliderule\"" >> /usr/local/include/sliderule/platform.h
        sudo echo "#define __tracing__" >> /usr/local/include/sliderule/platform.h
