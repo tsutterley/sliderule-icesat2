@@ -61,7 +61,7 @@ jobs:
 
     - run: |
        sudo apt install build-essential libreadline-dev liblua5.3-dev
-       git clone --depth=1 git@github.com:ICESat2-SlideRule/sliderule.git
+       gh repo clone ICESat2-SlideRule/sliderule
        sudo mkdir -p /usr/local/include/sliderule
        sudo find sliderule -name "*.h" -exec cp {} /usr/local/include/sliderule/ \;
        make plugin-config
