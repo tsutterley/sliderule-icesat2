@@ -47,6 +47,21 @@
  ******************************************************************************/
 
 /*----------------------------------------------------------------------------
+ * icesat2_version
+ *----------------------------------------------------------------------------*/
+int icesat2_version (lua_State* L)
+{
+    /* Display Version Information on Terminal */
+    print2term("ICESat-2 Plugin Version: %s\n", BINID);
+    print2term("Build Information: %s\n", BUILDINFO);
+
+    /* Return Version Information to Lua */
+    lua_pushstring(L, BINID);
+    lua_pushstring(L, BUILDINFO);
+    return 2;
+}
+
+/*----------------------------------------------------------------------------
  * icesat2_open
  *----------------------------------------------------------------------------*/
 int icesat2_open (lua_State *L)
@@ -56,6 +71,7 @@ int icesat2_open (lua_State *L)
         {"atl03indexer",    Atl03Indexer::luaCreate},
         {"atl06",           Atl06Dispatch::luaCreate},
         {"ut_atl06",        UT_Atl06Dispatch::luaCreate},
+        {"version",         icesat2_version},
         {NULL,              NULL}
     };
 

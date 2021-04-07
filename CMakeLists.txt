@@ -25,6 +25,9 @@ find_package (Lua "5.3")
 
 # Version Information #
 file(STRINGS ${PROJECT_SOURCE_DIR}/version.txt TGTVER)
+execute_process (COMMAND git --git-dir ${PROJECT_SOURCE_DIR}/.git describe --abbrev --dirty --always --tags --long OUTPUT_VARIABLE BUILDINFO)
+string(REGEX REPLACE "\n$" "" BUILDINFO "${BUILDINFO}")
+target_compile_definitions (icesat2 PUBLIC BUILDINFO="${BUILDINFO}")
 
 # Set Environment Variables
 set (INSTALLDIR /usr/local CACHE STRING "Installation directory for library and executables")
