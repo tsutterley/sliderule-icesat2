@@ -155,11 +155,6 @@ void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provid
                     parms->stages[STAGE_RAW] = true;
                     mlog(INFO, "Enabling %s stage", LUA_PARM_STAGE_RAW);
                 }
-                else if(StringLib::match(stage_str, LUA_PARM_STAGE_SUB))
-                {
-                    parms->stages[STAGE_SUB] = true;
-                    mlog(INFO, "Enabling %s stage", LUA_PARM_STAGE_SUB);
-                }
             }
 
             /* Clean up stack */

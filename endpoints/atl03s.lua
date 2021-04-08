@@ -1,7 +1,7 @@
 --
--- ENDPOINT:    /source/atl06
+-- ENDPOINT:    /source/atl03s
 --
--- PURPOSE:     generate customized atl06 data product
+-- PURPOSE:     subset and return atl03 segments
 --
 -- INPUT:       rqst
 --              {
@@ -14,11 +14,11 @@
 --
 --              rspq - output queue to stream results
 --
--- OUTPUT:      atl06rec (ATL06 algorithm results)
+-- OUTPUT:      atl03rec
 --
 -- NOTES:       1. The rqst is provided by arg[1] which is a json object provided by caller
 --              2. The rspq is the system provided output queue name string
---              3. The output is a raw binary blob containing serialized 'atl06rec' and 'atl06rec.elevation' RecordObjects
+--              3. The output is a raw binary blob containing serialized 'atl03rec' and 'atl03rec.photons' RecordObjects
 --
 
 local json = require("json")
@@ -35,21 +35,11 @@ local track = rqst["track"] or icesat2.ALL_TRACKS
 local parms = rqst["parms"]
 local timeout = rqst["timeout"] or core.PEND
 
--- Check Stages --
-local recq = rspq .. "-atl03"
+-- Send Data Directly to Response --
+local recq = rspq 
 
 -- Post Initial Status Progress --
-userlog:sendlog(core.INFO, string.format("atl06 processing initiated on %s ...", resource))
-
--- ATL06 Dispatch Algorithm --
-atl06_algo = icesat2.atl06(rspq, parms)
-atl06_algo:name("atl06_algo")
-
--- ATL06 Dispatcher --
-atl06_disp = core.dispatcher(recq)
-atl06_disp:name("atl06_disp")
-atl06_disp:attach(atl06_algo, "atl03rec")
-atl06_disp:run()
+userlog:sendlog(core.INFO, string.format("atl03 subsetting for %s ...", resource))
 
 -- ATL03 Reader --
 local resource_url = asset.buildurl(atl03_asset, resource)
@@ -59,22 +49,15 @@ atl03_reader:name("atl03_reader")
 -- Wait Until Completion --
 local duration = 0
 local interval = 10000 -- 10 seconds
-while not atl06_disp:waiton(interval) do
+while not atl03_reader:waiton(interval) do
     duration = duration + interval
     -- Check for Timeout --
     if timeout > 0 and duration == timeout then
         userlog:sendlog(core.INFO, string.format("request for %s timed-out after %d seconds", resource, duration / 1000))
         return
     end
-    -- Get Stats --
     local atl03_stats = atl03_reader:stats(false)
-    local atl06_stats = atl06_algo:stats(false)
-    -- Dispay Progress --
-    if atl06_stats.h5atl03 == 0 then
-        userlog:sendlog(core.INFO, string.format("... continuing to read %s (after %d seconds)", resource, duration / 1000))
-    else
-        userlog:sendlog(core.INFO, string.format("processed %d out of %d segments in %s (after %d seconds)", atl06_stats.h5atl03, atl03_stats.read, resource, duration / 1000))
-    end
+    userlog:sendlog(core.INFO, string.format("read %d segments in %s (after %d seconds)", atl03_stats.read, resource, duration / 1000))
 end
 
 -- Processing Complete

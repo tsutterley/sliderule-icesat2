@@ -59,6 +59,7 @@ target_include_directories (icesat2
 install (
     FILES
         ${CMAKE_CURRENT_LIST_DIR}/endpoints/atl06.lua
+        ${CMAKE_CURRENT_LIST_DIR}/endpoints/atl03s.lua
         ${CMAKE_CURRENT_LIST_DIR}/endpoints/indexer.lua
     DESTINATION
         ${CONFDIR}
