@@ -658,8 +658,8 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (point_t* array, int size)
         gth_2 += array[p].x * array[p].y;
 
         /* Get Min's and Max's */
-        if(array[p].x > fit.x_min)  fit.x_min = array[p].x;
-        if(array[p].x < fit.x_max)  fit.x_max = array[p].x;
+        if(array[p].x < fit.x_min)  fit.x_min = array[p].x;
+        if(array[p].x > fit.x_max)  fit.x_max = array[p].x;
     }
 
     /* Calculate Inverse of GT*G */
