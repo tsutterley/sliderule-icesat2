@@ -49,6 +49,7 @@
 #define ATL06_DEFAULT_MAX_ITERATIONS            20
 #define ATL06_DEFAULT_MIN_WINDOW                3.0 // meters
 #define ATL06_DEFAULT_MAX_ROBUST_DISPERSION     5.0 // meters
+#define ATL06_DEFAULT_COMPACT                   false
 
 /******************************************************************************
  * FILE DATA
@@ -57,7 +58,8 @@
 const atl06_parms_t DefaultParms = {
     .surface_type               = ATL06_DEFAULT_SURFACE_TYPE,
     .signal_confidence          = ATL06_DEFAULT_SIGNAL_CONFIDENCE,
-    .stages                     = { false, true },
+    .stages                     = { true },
+    .compact                    = ATL06_DEFAULT_COMPACT,
     .polygon                    = { { 0, 0 } },
     .points_in_polygon          = 0,
     .max_iterations             = ATL06_DEFAULT_MAX_ITERATIONS,
@@ -150,11 +152,6 @@ void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provid
                     parms->stages[STAGE_LSF] = true;
                     mlog(INFO, "Enabling %s stage", LUA_PARM_STAGE_LSF);
                 }
-                else if(StringLib::match(stage_str, LUA_PARM_STAGE_RAW))
-                {
-                    parms->stages[STAGE_RAW] = true;
-                    mlog(INFO, "Enabling %s stage", LUA_PARM_STAGE_RAW);
-                }
             }
 
             /* Clean up stack */
@@ -192,6 +189,11 @@ atl06_parms_t getLuaAtl06Parms (lua_State* L, int index)
 
         lua_getfield(L, index, LUA_PARM_STAGES);
         get_lua_stages(L, -1, &parms, &provided);
+        lua_pop(L, 1);
+
+        lua_getfield(L, index, LUA_PARM_COMPACT);
+        parms.compact = LuaObject::getLuaBoolean(L, -1, true, parms.compact, &provided);
+        if(provided) mlog(INFO, "Setting %s to %s", LUA_PARM_COMPACT, parms.compact ? "true" : "false");
         lua_pop(L, 1);
 
         lua_getfield(L, index, LUA_PARM_MAX_ITERATIONS);

@@ -495,11 +495,7 @@ void* Atl03Reader::atl06Thread (void* parm)
             if(extent_valid[PRT_LEFT] || extent_valid[PRT_RIGHT])
             {
                 /* Calculate Extent Record Size */
-                int num_photons = 0;
-                if(!reader->parms.stages[STAGE_SUB])
-                {
-                    num_photons = extent_photons[PRT_LEFT].length() + extent_photons[PRT_RIGHT].length();
-                }
+                int num_photons = extent_photons[PRT_LEFT].length() + extent_photons[PRT_RIGHT].length();
                 int extent_size = sizeof(extent_t) + (sizeof(photon_t) * num_photons);
 
                 /* Allocate and Initialize Extent Record */

@@ -48,6 +48,7 @@
 #define LUA_PARM_SIGNAL_CONFIDENCE              "cnf"
 #define LUA_PARM_POLYGON                        "poly"
 #define LUA_PARM_STAGES                         "stages"
+#define LUA_PARM_COMPACT                        "compact"
 #define LUA_PARM_LATITUDE                       "lat"
 #define LUA_PARM_LONGITUDE                      "lon"
 #define LUA_PARM_ALONG_TRACK_SPREAD             "ats"
@@ -57,7 +58,6 @@
 #define LUA_PARM_MAX_ITERATIONS                 "maxi"
 #define LUA_PARM_MIN_WINDOW                     "H_min_win"
 #define LUA_PARM_MAX_ROBUST_DISPERSION          "sigma_r_max"
-#define LUA_PARM_STAGE_RAW                      "RAW"
 #define LUA_PARM_STAGE_LSF                      "LSF"
 #define LUA_PARM_MAX_COORDS                     32
 
@@ -114,10 +114,8 @@ typedef enum {
 
 /* Algorithm Stages */
 typedef enum {
-    STAGE_SUB = 0,  // subsetted ATL03 segments w/o photons
-    STAGE_RAW = 0,  // subsetted ATL03 w/ photons
-    STAGE_LSF = 1,  // least squares fit
-    NUM_STAGES = 2
+    STAGE_LSF = 0,  // least squares fit
+    NUM_STAGES = 1
 } atl06_stages_t;
 
 /* Extraction Parameters */
@@ -125,6 +123,7 @@ typedef struct {
     surface_type_t          surface_type;                   // surface reference type (used to select signal confidence column)
     signal_conf_t           signal_confidence;              // minimal allowed signal confidence
     bool                    stages[NUM_STAGES];             // algorithm iterations
+    bool                    compact;                        // return compact (only lat,lon,height,time) elevation information
     MathLib::coord_t        polygon[LUA_PARM_MAX_COORDS];   // bounding region
     int                     points_in_polygon;              // 
     int                     max_iterations;                 // least squares fit iterations

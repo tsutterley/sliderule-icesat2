@@ -68,6 +68,12 @@ class Atl06Dispatch: public DispatchObject
 
         static const int BATCH_SIZE = 256;
 
+        static const char* elCompactRecType;
+        static const RecordObject::fieldDef_t elCompactRecDef[];
+
+        static const char* atCompactRecType;
+        static const RecordObject::fieldDef_t atCompactRecDef[];
+
         static const char* elRecType;
         static const RecordObject::fieldDef_t elRecDef[];
 
@@ -83,28 +89,43 @@ class Atl06Dispatch: public DispatchObject
 
         /* Statistics --> TODO: NOT THREAD SAFE */
         typedef struct {
-            uint32_t        h5atl03_rec_cnt;
-            uint32_t        post_success_cnt;
-            uint32_t        post_dropped_cnt;
+            uint32_t            h5atl03_rec_cnt;
+            uint32_t            post_success_cnt;
+            uint32_t            post_dropped_cnt;
         } stats_t;
 
         /* Elevation Measurement */
         typedef struct {
-            uint32_t        segment_id;
-            uint16_t        rgt;                    // reference ground track
-            uint16_t        cycle;                  // cycle number
-            uint8_t         spot;                   // 1 through 6, or 0 if unknown
-            double          gps_time;               // seconds from GPS epoch
-            double          latitude;
-            double          longitude;
-            double          h_mean;                 // meters from ellipsoid
-            double          along_track_slope;
-            double          across_track_slope;
-        } elevation_t;
+            double              gps_time;               // seconds from GPS epoch
+            double              latitude;
+            double              longitude;
+            double              h_mean;                 // meters from ellipsoid
+        } elevation_compact_t;
 
         /* ATL06 Record */
         typedef struct {
-            elevation_t     elevation[BATCH_SIZE];
+            elevation_compact_t elevation[BATCH_SIZE];
+        } atl06_compact_t;
+
+        /* Extended Elevation Measurement */
+        typedef struct {
+            uint32_t            segment_id;
+            int32_t             photon_count;           // number of photons used in final elevation calculation
+            uint16_t            rgt;                    // reference ground track
+            uint16_t            cycle;                  // cycle number
+            uint8_t             spot;                   // 1 through 6, or 0 if unknown
+            double              gps_time;               // seconds from GPS epoch
+            double              latitude;
+            double              longitude;
+            double              h_mean;                 // meters from ellipsoid
+            double              along_track_slope;
+            double              across_track_slope;
+            double              window_height;
+        } elevation_t;
+
+        /* ATL06 Extended Record */
+        typedef struct {
+            elevation_t         elevation[BATCH_SIZE];
         } atl06_t;
 
         /*--------------------------------------------------------------------
@@ -140,8 +161,6 @@ class Atl06Dispatch: public DispatchObject
             bool        violated_count;
             bool        violated_iterations;
             elevation_t elevation;
-            double      window_height;
-            int32_t     photon_count;
             point_t*    photons;
         } result_t;
 
@@ -149,15 +168,16 @@ class Atl06Dispatch: public DispatchObject
          * Data
          *--------------------------------------------------------------------*/
 
-        RecordObject*   recObj;
-        atl06_t*        recData;
-        Publisher*      outQ;
+        RecordObject*       recObj;
+        atl06_compact_t*    recCompactData;
+        atl06_t*            recData;
+        Publisher*          outQ;
 
-        Mutex           elevationMutex;
-        int             elevationIndex;
+        Mutex               elevationMutex;
+        int                 elevationIndex;
 
-        atl06_parms_t   parms;
-        stats_t         stats;
+        atl06_parms_t       parms;
+        stats_t             stats;
 
         /*--------------------------------------------------------------------
          * Methods

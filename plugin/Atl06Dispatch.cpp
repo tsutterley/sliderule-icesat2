@@ -84,23 +84,38 @@ const double Atl06Dispatch::RDE_SCALE_FACTOR = 1.3490;
 const double Atl06Dispatch::SIGMA_BEAM = 4.25; // meters
 const double Atl06Dispatch::SIGMA_XMIT = 0.000000068; // seconds
 
-const char* Atl06Dispatch::elRecType = "atl06rec.elevation";
+const char* Atl06Dispatch::elCompactRecType = "atl06rec-compact.elevation"; // elevation measurement record
+const RecordObject::fieldDef_t Atl06Dispatch::elCompactRecDef[] = {
+    {"delta_time",              RecordObject::DOUBLE,   offsetof(elevation_compact_t, gps_time),    1,  NULL, NATIVE_FLAGS},
+    {"lat",                     RecordObject::DOUBLE,   offsetof(elevation_compact_t, latitude),    1,  NULL, NATIVE_FLAGS},
+    {"lon",                     RecordObject::DOUBLE,   offsetof(elevation_compact_t, longitude),   1,  NULL, NATIVE_FLAGS},
+    {"h_mean",                  RecordObject::DOUBLE,   offsetof(elevation_compact_t, h_mean),      1,  NULL, NATIVE_FLAGS}
+};
+
+const char* Atl06Dispatch::atCompactRecType = "atl06rec-compact";
+const RecordObject::fieldDef_t Atl06Dispatch::atCompactRecDef[] = {
+    {"elevation",               RecordObject::USER,     offsetof(atl06_compact_t, elevation),       0,  elCompactRecType, NATIVE_FLAGS}
+};
+
+const char* Atl06Dispatch::elRecType = "atl06rec.elevation"; // extended elevation measurement record
 const RecordObject::fieldDef_t Atl06Dispatch::elRecDef[] = {
-    {"segment_id",  RecordObject::UINT32,   offsetof(elevation_t, segment_id),          1,  NULL, NATIVE_FLAGS},
-    {"rgt",         RecordObject::UINT16,   offsetof(elevation_t, rgt),                 1,  NULL, NATIVE_FLAGS},
-    {"cycle",       RecordObject::UINT16,   offsetof(elevation_t, cycle),               1,  NULL, NATIVE_FLAGS},
-    {"spot",        RecordObject::UINT8,    offsetof(elevation_t, spot),                1,  NULL, NATIVE_FLAGS},
-    {"delta_time",  RecordObject::DOUBLE,   offsetof(elevation_t, gps_time),            1,  NULL, NATIVE_FLAGS},
-    {"lat",         RecordObject::DOUBLE,   offsetof(elevation_t, latitude),            1,  NULL, NATIVE_FLAGS},
-    {"lon",         RecordObject::DOUBLE,   offsetof(elevation_t, longitude),           1,  NULL, NATIVE_FLAGS},
-    {"h_mean",      RecordObject::DOUBLE,   offsetof(elevation_t, h_mean),              1,  NULL, NATIVE_FLAGS},
-    {"dh_fit_dx",   RecordObject::DOUBLE,   offsetof(elevation_t, along_track_slope),   1,  NULL, NATIVE_FLAGS},
-    {"dh_fit_dy",   RecordObject::DOUBLE,   offsetof(elevation_t, across_track_slope),  1,  NULL, NATIVE_FLAGS}
+    {"segment_id",              RecordObject::UINT32,   offsetof(elevation_t, segment_id),          1,  NULL, NATIVE_FLAGS},
+    {"n_fit_photons",           RecordObject::INT32,    offsetof(elevation_t, photon_count),        1,  NULL, NATIVE_FLAGS},
+    {"rgt",                     RecordObject::UINT16,   offsetof(elevation_t, rgt),                 1,  NULL, NATIVE_FLAGS},
+    {"cycle",                   RecordObject::UINT16,   offsetof(elevation_t, cycle),               1,  NULL, NATIVE_FLAGS},
+    {"spot",                    RecordObject::UINT8,    offsetof(elevation_t, spot),                1,  NULL, NATIVE_FLAGS},
+    {"delta_time",              RecordObject::DOUBLE,   offsetof(elevation_t, gps_time),            1,  NULL, NATIVE_FLAGS},
+    {"lat",                     RecordObject::DOUBLE,   offsetof(elevation_t, latitude),            1,  NULL, NATIVE_FLAGS},
+    {"lon",                     RecordObject::DOUBLE,   offsetof(elevation_t, longitude),           1,  NULL, NATIVE_FLAGS},
+    {"h_mean",                  RecordObject::DOUBLE,   offsetof(elevation_t, h_mean),              1,  NULL, NATIVE_FLAGS},
+    {"dh_fit_dx",               RecordObject::DOUBLE,   offsetof(elevation_t, along_track_slope),   1,  NULL, NATIVE_FLAGS},
+    {"dh_fit_dy",               RecordObject::DOUBLE,   offsetof(elevation_t, across_track_slope),  1,  NULL, NATIVE_FLAGS},
+    {"w_surface_window_final",  RecordObject::DOUBLE,   offsetof(elevation_t, window_height),       1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl06Dispatch::atRecType = "atl06rec";
 const RecordObject::fieldDef_t Atl06Dispatch::atRecDef[] = {
-    {"elevation",   RecordObject::USER,     offsetof(atl06_t, elevation),               0,  elRecType, NATIVE_FLAGS}
+    {"elevation",               RecordObject::USER,     offsetof(atl06_t, elevation),               0,  elRecType, NATIVE_FLAGS}
 };
 
 const char* Atl06Dispatch::LuaMetaName = "Atl06Dispatch";
@@ -122,10 +137,10 @@ int Atl06Dispatch::luaCreate (lua_State* L)
     {
         /* Get Parameters */
         const char* outq_name = getLuaString(L, 1);
-        atl06_parms_t parms = getLuaAtl06Parms(L, 2);
+        atl06_parms_t atl06_parms = getLuaAtl06Parms(L, 2);
 
         /* Create ATL06 Dispatch */
-        return createLuaObject(L, new Atl06Dispatch(L, outq_name, parms));
+        return createLuaObject(L, new Atl06Dispatch(L, outq_name, atl06_parms));
     }
     catch(const RunTimeException& e)
     {
@@ -139,22 +154,25 @@ int Atl06Dispatch::luaCreate (lua_State* L)
  *----------------------------------------------------------------------------*/
 void Atl06Dispatch::init (void)
 {
-    RecordObject::recordDefErr_t el_rc = RecordObject::defineRecord(elRecType, NULL, sizeof(elevation_t), elRecDef, sizeof(elRecDef) / sizeof(RecordObject::fieldDef_t), 16);
-    if(el_rc != RecordObject::SUCCESS_DEF)
-    {
-        mlog(CRITICAL, "Failed to define %s: %d", elRecType, el_rc);
-    }
+    RecordObject::recordDefErr_t rc;
+    
+    rc = RecordObject::defineRecord(elRecType, NULL, sizeof(elevation_t), elRecDef, sizeof(elRecDef) / sizeof(RecordObject::fieldDef_t), 16);
+    if(rc != RecordObject::SUCCESS_DEF) mlog(CRITICAL, "Failed to define %s: %d", elRecType, rc);
+
+    rc = RecordObject::defineRecord(elCompactRecType, NULL, sizeof(elevation_compact_t), elCompactRecDef, sizeof(elCompactRecDef) / sizeof(RecordObject::fieldDef_t), 8);
+    if(rc != RecordObject::SUCCESS_DEF) mlog(CRITICAL, "Failed to define %s: %d", elCompactRecType, rc);
 
     /*
-     * Note: the size associated with this record includes only one elevation_t;
+     * Note: the size associated with these records includes only one elevation;
      * this forces any software accessing more than one elevation to manage
      * the size of the record manually.
      */
-    RecordObject::recordDefErr_t at_rc = RecordObject::defineRecord(atRecType, NULL, offsetof(atl06_t, elevation[1]), atRecDef, sizeof(atRecDef) / sizeof(RecordObject::fieldDef_t), 16);
-    if(at_rc != RecordObject::SUCCESS_DEF)
-    {
-        mlog(CRITICAL, "Failed to define %s: %d", atRecType, at_rc);
-    }
+
+    rc = RecordObject::defineRecord(atRecType, NULL, offsetof(atl06_t, elevation[1]), atRecDef, sizeof(atRecDef) / sizeof(RecordObject::fieldDef_t), 4);
+    if(rc != RecordObject::SUCCESS_DEF) mlog(CRITICAL, "Failed to define %s: %d", atRecType, rc);
+
+    rc = RecordObject::defineRecord(atCompactRecType, NULL, offsetof(atl06_compact_t, elevation[1]), atCompactRecDef, sizeof(atCompactRecDef) / sizeof(RecordObject::fieldDef_t), 4);
+    if(rc != RecordObject::SUCCESS_DEF) mlog(CRITICAL, "Failed to define %s: %d", atCompactRecType, rc);
 }
 
 /******************************************************************************
@@ -169,13 +187,24 @@ Atl06Dispatch::Atl06Dispatch (lua_State* L, const char* outq_name, const atl06_p
 {
     assert(outq_name);
 
+    /* Initialize Parameters */
+    parms = _parms;
+
     /*
-     * Note: when allocating memory for this record, the full atl06_t size is used;
-     * this extends the memory available past the one elevation_t provided in the
+     * Note: when allocating memory for this record, the full record size is used;
+     * this extends the memory available past the one elevation provided in the
      * definition.
      */
-    recObj = new RecordObject(atRecType, sizeof(atl06_t));
-    recData = (atl06_t*)recObj->getRecordData();
+    if(!parms.compact)
+    {
+        recObj = new RecordObject(atRecType, sizeof(atl06_t));
+        recData = (atl06_t*)recObj->getRecordData();
+    }
+    else
+    {
+        recObj = new RecordObject(atCompactRecType, sizeof(atl06_compact_t));
+        recCompactData = (atl06_compact_t*)recObj->getRecordData();
+    }
 
     /* Initialize Publisher */
     outQ = new Publisher(outq_name);
@@ -183,9 +212,6 @@ Atl06Dispatch::Atl06Dispatch (lua_State* L, const char* outq_name, const atl06_p
 
     /* Initialize Statistics */
     LocalLib::set(&stats, 0, sizeof(stats));
-
-    /* Initialize Parameters */
-    parms = _parms;
 }
 
 /*----------------------------------------------------------------------------
@@ -228,16 +254,16 @@ bool Atl06Dispatch::processRecord (RecordObject* record, okey_t key)
         result[t].elevation.longitude = extent->longitude[t];
 
         /* Copy In Initial Set of Photons */
-        result[t].photon_count = extent->photon_count[t];
-        if(result[t].photon_count > 0)
+        result[t].elevation.photon_count = extent->photon_count[t];
+        if(result[t].elevation.photon_count > 0)
         {
-            result[t].photons = new point_t[result[t].photon_count];
-            for(int p = 0; p < result[t].photon_count; p++)
+            result[t].photons = new point_t[result[t].elevation.photon_count];
+            for(int p = 0; p < result[t].elevation.photon_count; p++)
             {
                 result[t].photons[p].x = extent->photons[first_photon + p].distance_x;
                 result[t].photons[p].y = extent->photons[first_photon + p].height_y;
             }
-            first_photon += result[t].photon_count;
+            first_photon += result[t].elevation.photon_count;
         }
     }
     /* Calcualte Beam Number */
@@ -335,12 +361,24 @@ void Atl06Dispatch::calculateBeam (sc_orient_t sc_orient, track_t track, result_
  *----------------------------------------------------------------------------*/
 void Atl06Dispatch::postResult (elevation_t* elevation)
 {
+
     elevationMutex.lock();
     {
         /* Populate Elevation */
         if(elevation)
         {
-            recData->elevation[elevationIndex++] = *elevation;
+            if(!parms.compact)
+            {
+                recData->elevation[elevationIndex++] = *elevation;
+            }
+            else
+            {
+                recCompactData->elevation[elevationIndex].gps_time = elevation->gps_time;
+                recCompactData->elevation[elevationIndex].latitude = elevation->latitude;
+                recCompactData->elevation[elevationIndex].longitude = elevation->longitude;
+                recCompactData->elevation[elevationIndex].h_mean = elevation->h_mean;
+                elevationIndex++;
+            }
         }
 
         /* Check If ATL06 Record Should Be Posted*/
@@ -351,7 +389,14 @@ void Atl06Dispatch::postResult (elevation_t* elevation)
             int size = recObj->serialize(&buffer, RecordObject::REFERENCE);
 
             /* Adjust Size (according to number of elevations) */
-            size -= (BATCH_SIZE - elevationIndex) * sizeof(elevation_t);
+            if(!parms.compact)
+            {
+                size -= (BATCH_SIZE - elevationIndex) * sizeof(elevation_t);
+            }
+            else
+            {
+                size -= (BATCH_SIZE - elevationIndex) * sizeof(elevation_compact_t);
+            }
 
             /* Reset Elevation Index */
             elevationIndex = 0;
@@ -393,7 +438,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
         /* Iterate Processing of Photons */
         while(!done)
         {
-            int num_photons = result[t].photon_count;
+            int num_photons = result[t].elevation.photon_count;
 
             /* Check Photon Count */
             if(num_photons < parms.minimum_photon_count)
@@ -446,9 +491,9 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             }
             else
             {
-                background_count    = result[t].window_height * background_density; // section 5.7, procedure 2c
-                window_lower_bound  = -(result[t].window_height / 2.0); // section 5.7, procedure 2c
-                window_upper_bound  = result[t].window_height / 2.0; // section 5.7, procedure 2c
+                background_count    = result[t].elevation.window_height * background_density; // section 5.7, procedure 2c
+                window_lower_bound  = -(result[t].elevation.window_height / 2.0); // section 5.7, procedure 2c
+                window_upper_bound  = result[t].elevation.window_height / 2.0; // section 5.7, procedure 2c
             }
 
             /* Continued Inputs to Robust Dispersion Estimate */
@@ -516,8 +561,8 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Calculate Window Height */
             if(sigma_r > parms.maximum_robust_dispersion) sigma_r = parms.maximum_robust_dispersion;
             double new_window_height = MAX(MAX(parms.minimum_window, 6.0 * sigma_expected), 6.0 * sigma_r); // H_win, section 5.5, procedure 4e
-            result[t].window_height = MAX(new_window_height, 0.75 * result[t].window_height); // section 5.7, procedure 2e
-            double window_spread = result[t].window_height / 2.0;
+            result[t].elevation.window_height = MAX(new_window_height, 0.75 * result[t].elevation.window_height); // section 5.7, procedure 2e
+            double window_spread = result[t].elevation.window_height / 2.0;
 
             /* Filtered Out Photons in Results (section 5.5, procedure 4f) */
             int32_t ph_in = 0;
@@ -536,9 +581,9 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
              */
 
             /* Set New Number of Photons */
-            if(ph_in != result[t].photon_count)
+            if(ph_in != result[t].elevation.photon_count)
             {
-                result[t].photon_count = ph_in; // from filtering above
+                result[t].elevation.photon_count = ph_in; // from filtering above
             }
             else // no change in photons
             {
