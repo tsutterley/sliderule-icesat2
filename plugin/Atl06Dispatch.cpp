@@ -594,6 +594,21 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
 }
 
 /*----------------------------------------------------------------------------
+ * calculateErrorStage
+ *
+ *  Note: Section 3.6 - Signal, Noise, and Error Estimates
+ *        Section 5.7, procedure 5
+ *----------------------------------------------------------------------------*/
+void Atl06Dispatch::calculateErrorStage (Atl03Reader::extent_t* extent, result_t* result)
+{
+    /* Process Tracks */
+    for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
+    {
+
+    }
+}
+
+/*----------------------------------------------------------------------------
  * luaStats
  *----------------------------------------------------------------------------*/
 int Atl06Dispatch::luaStats (lua_State* L)

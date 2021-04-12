@@ -194,6 +194,7 @@ class Atl06Dispatch: public DispatchObject
         void            postResult                      (elevation_t* elevation);
 
         void            iterativeFitStage               (Atl03Reader::extent_t* extent, result_t* result);
+        void            calculateErrorStage             (Atl03Reader::extent_t* extent, result_t* result);
 
         static int      luaStats                        (lua_State* L);
         static int      luaSelect                       (lua_State* L);
