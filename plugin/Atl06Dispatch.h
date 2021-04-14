@@ -121,6 +121,7 @@ class Atl06Dispatch: public DispatchObject
             double              along_track_slope;
             double              across_track_slope;
             double              window_height;
+            double              rms_misfit;
         } elevation_t;
 
         /* ATL06 Extended Record */

@@ -110,7 +110,8 @@ const RecordObject::fieldDef_t Atl06Dispatch::elRecDef[] = {
     {"h_mean",                  RecordObject::DOUBLE,   offsetof(elevation_t, h_mean),              1,  NULL, NATIVE_FLAGS},
     {"dh_fit_dx",               RecordObject::DOUBLE,   offsetof(elevation_t, along_track_slope),   1,  NULL, NATIVE_FLAGS},
     {"dh_fit_dy",               RecordObject::DOUBLE,   offsetof(elevation_t, across_track_slope),  1,  NULL, NATIVE_FLAGS},
-    {"w_surface_window_final",  RecordObject::DOUBLE,   offsetof(elevation_t, window_height),       1,  NULL, NATIVE_FLAGS}
+    {"w_surface_window_final",  RecordObject::DOUBLE,   offsetof(elevation_t, window_height),       1,  NULL, NATIVE_FLAGS},
+    {"rms_misfit",              RecordObject::DOUBLE,   offsetof(elevation_t, rms_misfit),          1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl06Dispatch::atRecType = "atl06rec";
@@ -271,6 +272,7 @@ bool Atl06Dispatch::processRecord (RecordObject* record, okey_t key)
 
     /* Execute Algorithm Stages */
     if(parms.stages[STAGE_LSF]) iterativeFitStage(extent, result);
+    if(parms.stages[STAGE_ERR]) calculateErrorStage(extent, result);
 
     /* Post Elevation  */
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
@@ -601,10 +603,22 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
  *----------------------------------------------------------------------------*/
 void Atl06Dispatch::calculateErrorStage (Atl03Reader::extent_t* extent, result_t* result)
 {
+    (void)extent;
+
     /* Process Tracks */
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
     {
+        /* Sum Deltas in Photon Heights */
+        double delta_sum = 0.0;
+        for(int p = 0; p < result[t].elevation.photon_count; p++)
+        {
+            double predicted_height = result[t].elevation.h_mean + (result[t].elevation.along_track_slope * result[t].photons[p].x);
+            double delta_height = predicted_height - result[t].photons[p].y;
+            delta_sum += delta_height * delta_height;
+        }
 
+        /* Calculate RMS */
+        result[t].elevation.rms_misfit = sqrt(delta_sum / (double)result[t].elevation.photon_count);
     }
 }
 
