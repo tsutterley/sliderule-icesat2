@@ -1,5 +1,5 @@
-SlideRule ICESat-2 Plugin
-===========================
+# SlideRule ICESat-2 Plugin
+[![DOI](https://zenodo.org/badge/344240956.svg)](https://zenodo.org/badge/latestdoi/344240956)
 
 This SlideRule plugin includes algorithms for processing ICESat-2 data products.
 
