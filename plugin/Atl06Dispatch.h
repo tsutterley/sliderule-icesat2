@@ -122,6 +122,7 @@ class Atl06Dispatch: public DispatchObject
             double              across_track_slope;
             double              window_height;
             double              rms_misfit;
+            double              h_sigma;
         } elevation_t;
 
         /* ATL06 Extended Record */
@@ -147,6 +148,7 @@ class Atl06Dispatch: public DispatchObject
             double      slope;
             double      x_min;
             double      x_max;
+            double      y_sigma;
         } lsf_t;
 
         typedef struct {
@@ -158,9 +160,7 @@ class Atl06Dispatch: public DispatchObject
        /* Algorithm Result */
         typedef struct {
             bool        provided;
-            bool        violated_spread;
-            bool        violated_count;
-            bool        violated_iterations;
+            bool        invalid;
             elevation_t elevation;
             point_t*    photons;
         } result_t;
@@ -195,7 +195,6 @@ class Atl06Dispatch: public DispatchObject
         void            postResult                      (elevation_t* elevation);
 
         void            iterativeFitStage               (Atl03Reader::extent_t* extent, result_t* result);
-        void            calculateErrorStage             (Atl03Reader::extent_t* extent, result_t* result);
 
         static int      luaStats                        (lua_State* L);
         static int      luaSelect                       (lua_State* L);

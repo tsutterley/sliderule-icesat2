@@ -111,7 +111,8 @@ const RecordObject::fieldDef_t Atl06Dispatch::elRecDef[] = {
     {"dh_fit_dx",               RecordObject::DOUBLE,   offsetof(elevation_t, along_track_slope),   1,  NULL, NATIVE_FLAGS},
     {"dh_fit_dy",               RecordObject::DOUBLE,   offsetof(elevation_t, across_track_slope),  1,  NULL, NATIVE_FLAGS},
     {"w_surface_window_final",  RecordObject::DOUBLE,   offsetof(elevation_t, window_height),       1,  NULL, NATIVE_FLAGS},
-    {"rms_misfit",              RecordObject::DOUBLE,   offsetof(elevation_t, rms_misfit),          1,  NULL, NATIVE_FLAGS}
+    {"rms_misfit",              RecordObject::DOUBLE,   offsetof(elevation_t, rms_misfit),          1,  NULL, NATIVE_FLAGS},
+    {"h_sigma",                 RecordObject::DOUBLE,   offsetof(elevation_t, h_sigma),             1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl06Dispatch::atRecType = "atl06rec";
@@ -272,7 +273,6 @@ bool Atl06Dispatch::processRecord (RecordObject* record, okey_t key)
 
     /* Execute Algorithm Stages */
     if(parms.stages[STAGE_LSF]) iterativeFitStage(extent, result);
-    if(parms.stages[STAGE_ERR]) calculateErrorStage(extent, result);
 
     /* Post Elevation  */
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
@@ -445,7 +445,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Check Photon Count */
             if(num_photons < parms.minimum_photon_count)
             {
-                result[t].violated_count = true;
+                result[t].invalid = true;
                 done = true;
                 continue;
             }
@@ -454,12 +454,13 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             lsf_t fit = lsf(result[t].photons, num_photons);
             result[t].elevation.h_mean = fit.intercept;
             result[t].elevation.along_track_slope = fit.slope;
+            result[t].elevation.h_sigma = fit.y_sigma; // scaled by rms below
             result[t].provided = true;
 
             /* Check Spread */
             if( (fit.x_max - fit.x_min) < parms.along_track_spread )
             {
-                result[t].violated_spread = true;
+                result[t].invalid = true;
                 done = true;
                 continue;
             }
@@ -467,7 +468,6 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Check Iterations */
             if(iteration++ > parms.max_iterations)
             {
-                result[t].violated_iterations = true;
                 done = true;
                 continue;
             }
@@ -592,33 +592,30 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
                 done = true;
             }
         }
-    }
-}
 
-/*----------------------------------------------------------------------------
- * calculateErrorStage
- *
- *  Note: Section 3.6 - Signal, Noise, and Error Estimates
- *        Section 5.7, procedure 5
- *----------------------------------------------------------------------------*/
-void Atl06Dispatch::calculateErrorStage (Atl03Reader::extent_t* extent, result_t* result)
-{
-    (void)extent;
+        /*
+         *  Note: Section 3.6 - Signal, Noise, and Error Estimates
+         *        Section 5.7, procedure 5
+         */
 
-    /* Process Tracks */
-    for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
-    {
         /* Sum Deltas in Photon Heights */
         double delta_sum = 0.0;
         for(int p = 0; p < result[t].elevation.photon_count; p++)
         {
-            double predicted_height = result[t].elevation.h_mean + (result[t].elevation.along_track_slope * result[t].photons[p].x);
-            double delta_height = predicted_height - result[t].photons[p].y;
-            delta_sum += delta_height * delta_height;
+            delta_sum += (result[t].photons[p].r * result[t].photons[p].r);
         }
 
-        /* Calculate RMS */
-        result[t].elevation.rms_misfit = sqrt(delta_sum / (double)result[t].elevation.photon_count);
+        /* Calculate RMS and Scale h_sigma */
+        if(result[t].provided && !result[t].invalid)
+        {
+            result[t].elevation.rms_misfit = sqrt(delta_sum / (double)result[t].elevation.photon_count);
+            result[t].elevation.h_sigma = result[t].elevation.rms_misfit * result[t].elevation.h_sigma;
+        }
+        else
+        {
+            result[t].elevation.rms_misfit = 0.0;
+            result[t].elevation.h_sigma = 0.0;
+        }
     }
 }
 
@@ -663,43 +660,77 @@ int Atl06Dispatch::luaStats (lua_State* L)
 /*----------------------------------------------------------------------------
  * lsf - least squares fit
  *
+ *  Notes:
+ *  1. The matrix element notation is row/column; so xxx_12 is the element of
+ *     matrix xxx at row 1, column 2
+ *  2. If there are multiple elements specified, then the value represents both
+ *     elements; so xxx_12_21 the value in matrix xxx of the elements at row 1,
+ *     column 2, and row 2, column 1 
+ *
+ * Algorithm:
+ *  xi          distance of the photon from the start of the segment
+ *  h_mean      height at the center of the segment
+ *  dh/dx       along track slope of the segment
+ *  n           number of photons in the segment
+ * 
+ *  G = [1, xi]                 # n x 2 matrix of along track photon distances
+ *  m = [h_mean, dh/dx]         # 2 x 1 matrix representing the line of best fit
+ *  z = [hi]                    # 1 x n matrix of along track photon heights
+ *
+ *  G^-g = (G^T * G)^-1 * G^T   # 2 x 2 matrix which is the generalized inverse of G
+ *  m = G^-g * z                # 1 x 2 matrix containing solution
+ * 
+ *  y_sigma = sqrt((G^-g * G^-gT)[0,0]) # square root of first element (row 0, column 0) of covariance matrix
+ * 
  *  TODO: currently no protections against divide-by-zero
  *----------------------------------------------------------------------------*/
 Atl06Dispatch::lsf_t Atl06Dispatch::lsf (point_t* array, int size)
 {
     lsf_t fit;
 
-    /* Initialize Min's and Max's */
+    /* Initialize Fit */
+    fit.intercept = 0.0;
+    fit.slope = 0.0;
     fit.x_min = DBL_MAX;
     fit.x_max = DBL_MIN;
+    fit.y_sigma = 0.0;
 
-    /* Calculate GT*G and GT*h*/
+    /* Calculate G^T*G and GT*h*/
     double gtg_11 = size;
     double gtg_12_21 = 0.0;
     double gtg_22 = 0.0;
-    double gth_1 = 0.0;
-    double gth_2 = 0.0;
     for(int p = 0; p < size; p++)
     {
         gtg_12_21 += array[p].x;
         gtg_22 += array[p].x * array[p].x;
-        gth_1 += array[p].y;
-        gth_2 += array[p].x * array[p].y;
 
         /* Get Min's and Max's */
         if(array[p].x < fit.x_min)  fit.x_min = array[p].x;
         if(array[p].x > fit.x_max)  fit.x_max = array[p].x;
     }
 
-    /* Calculate Inverse of GT*G */
+    /* Calculate (G^T*G)^-1 */
     double det = 1.0 / ((gtg_11 * gtg_22) - (gtg_12_21 * gtg_12_21));
     double igtg_11 = gtg_22 * det;
     double igtg_12_21 = -1 * gtg_12_21 * det;
     double igtg_22 = gtg_11 * det;
 
-    /* Calculate IGTG * GTh */
-    fit.intercept = (igtg_11 * gth_1) + (igtg_12_21 * gth_2);
-    fit.slope = (igtg_12_21 * gth_1) + (igtg_22 * gth_2);
+    /* Calculate G^-g and m */
+    for(int p = 0; p < size; p++)
+    {        
+        double gig_1 = igtg_11 + (igtg_12_21 * array[p].x);   // G^-g row 1 element
+        double gig_2 = igtg_12_21 + (igtg_22 * array[p].x);   // G^-g row 2 element
+
+        /* Calculate m */
+        fit.intercept += gig_1 * array[p].y;
+        fit.slope += gig_2 * array[p].y;
+
+        /* Accumulate y_sigma */
+        fit.y_sigma += gig_1 * gig_1;
+    }
+
+    /* Calculate y_sigma */
+    fit.y_sigma = sqrt(fit.y_sigma);
 
     /* Return Fit */
     return fit;

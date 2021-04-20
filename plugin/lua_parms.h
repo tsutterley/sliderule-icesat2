@@ -59,7 +59,6 @@
 #define LUA_PARM_MIN_WINDOW                     "H_min_win"
 #define LUA_PARM_MAX_ROBUST_DISPERSION          "sigma_r_max"
 #define LUA_PARM_STAGE_LSF                      "LSF"
-#define LUA_PARM_STAGE_ERR                      "ERR"
 #define LUA_PARM_MAX_COORDS                     32
 
 /******************************************************************************
@@ -116,8 +115,7 @@ typedef enum {
 /* Algorithm Stages */
 typedef enum {
     STAGE_LSF = 0,  // least squares fit
-    STAGE_ERR = 1,  // calculated errors
-    NUM_STAGES = 2
+    NUM_STAGES = 1
 } atl06_stages_t;
 
 /* Extraction Parameters */

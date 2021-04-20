@@ -58,7 +58,7 @@
 const atl06_parms_t DefaultParms = {
     .surface_type               = ATL06_DEFAULT_SURFACE_TYPE,
     .signal_confidence          = ATL06_DEFAULT_SIGNAL_CONFIDENCE,
-    .stages                     = { true, true },
+    .stages                     = { true },
     .compact                    = ATL06_DEFAULT_COMPACT,
     .polygon                    = { { 0, 0 } },
     .points_in_polygon          = 0,
@@ -151,11 +151,6 @@ void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provid
                 {
                     parms->stages[STAGE_LSF] = true;
                     mlog(INFO, "Enabling %s stage", LUA_PARM_STAGE_LSF);
-                }
-                else if(StringLib::match(stage_str, LUA_PARM_STAGE_ERR))
-                {
-                    parms->stages[STAGE_ERR] = true;
-                    mlog(INFO, "Enabling %s stage", LUA_PARM_STAGE_ERR);
                 }
             }
 
