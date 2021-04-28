@@ -1,3 +1,0 @@
-asset,          format,     url,                            index
-atlas-s3,       s3,         icesat2-sliderule/data/ATLAS,   empty.index
-atlas-local,    file,       /data/ATLAS,                    empty.index
