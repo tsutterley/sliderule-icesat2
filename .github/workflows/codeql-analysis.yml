@@ -71,8 +71,8 @@ jobs:
        sudo echo "#define CONFDIR \"/usr/local/etc/sliderule\"" >> /usr/local/include/sliderule/platform.h
        sudo echo "#define __tracing__" >> /usr/local/include/sliderule/platform.h
        sudo echo "#define __terminal__" >> /usr/local/include/sliderule/platform.h
-       make plugin-config
-       make plugin-build
+       make config
+       make
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
