@@ -169,22 +169,22 @@ class Atl06Dispatch: public DispatchObject
          * Data
          *--------------------------------------------------------------------*/
 
-        RecordObject*       recObj;
-        atl06_compact_t*    recCompactData;
-        atl06_t*            recData;
-        Publisher*          outQ;
+        RecordObject*           recObj;
+        atl06_compact_t*        recCompactData;
+        atl06_t*                recData;
+        Publisher*              outQ;
 
-        Mutex               elevationMutex;
-        int                 elevationIndex;
+        Mutex                   elevationMutex;
+        int                     elevationIndex;
 
-        atl06_parms_t       parms;
-        stats_t             stats;
+        const atl06_parms_t*    parms;
+        stats_t                 stats;
 
         /*--------------------------------------------------------------------
          * Methods
          *--------------------------------------------------------------------*/
 
-                        Atl06Dispatch                   (lua_State* L, const char* outq_name, const atl06_parms_t _parms);
+                        Atl06Dispatch                   (lua_State* L, const char* outq_name, const atl06_parms_t* _parms);
                         ~Atl06Dispatch                  (void);
 
         bool            processRecord                   (RecordObject* record, okey_t key) override;

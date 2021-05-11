@@ -60,7 +60,6 @@ const atl06_parms_t DefaultParms = {
     .signal_confidence          = ATL06_DEFAULT_SIGNAL_CONFIDENCE,
     .stages                     = { true },
     .compact                    = ATL06_DEFAULT_COMPACT,
-    .polygon                    = { { 0, 0 } },
     .points_in_polygon          = 0,
     .max_iterations             = ATL06_DEFAULT_MAX_ITERATIONS,
     .along_track_spread         = ATL06_DEFAULT_ALONG_TRACK_SPREAD,
@@ -75,7 +74,7 @@ const atl06_parms_t DefaultParms = {
  * LOCAL FUNCTIONS
  ******************************************************************************/
 
-void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
+static void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
     /* Must be table of coordinates */
     if(lua_istable(L, index))
@@ -109,7 +108,7 @@ void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool* provi
                 lua_pop(L, 1);
 
                 /* Add Coordinate */
-                parms->polygon[i] = coord;
+                parms->polygon.add(coord);
                 if(provided) *provided = true;
             }
             lua_pop(L, 1);
@@ -117,7 +116,7 @@ void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool* provi
     }
 }
 
-void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
+static void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
     /* Must be table of stages */
     if(lua_istable(L, index))
@@ -164,72 +163,81 @@ void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provid
  * EXPORTED FUNCTIONS
  ******************************************************************************/
 
-atl06_parms_t getLuaAtl06Parms (lua_State* L, int index)
+atl06_parms_t* getLuaAtl06Parms (lua_State* L, int index)
 {
-    atl06_parms_t parms = DefaultParms;
+    atl06_parms_t* parms = new atl06_parms_t; // freed in ATL03Reader and ATL06Dispatch destructor
+    *parms = DefaultParms; // initialize with defaults
 
     if(lua_type(L, index) == LUA_TTABLE)
     {
-        bool provided = false;
+        try
+        {
+            bool provided = false;
 
-        lua_getfield(L, index, LUA_PARM_SURFACE_TYPE);
-        parms.surface_type = (surface_type_t)LuaObject::getLuaInteger(L, -1, true, parms.surface_type, &provided);
-        if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_SURFACE_TYPE, (int)parms.surface_type);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_SURFACE_TYPE);
+            parms->surface_type = (surface_type_t)LuaObject::getLuaInteger(L, -1, true, parms->surface_type, &provided);
+            if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_SURFACE_TYPE, (int)parms->surface_type);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_SIGNAL_CONFIDENCE);
-        parms.signal_confidence = (signal_conf_t)LuaObject::getLuaInteger(L, -1, true, parms.signal_confidence, &provided);
-        if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_SIGNAL_CONFIDENCE, (int)parms.signal_confidence);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_SIGNAL_CONFIDENCE);
+            parms->signal_confidence = (signal_conf_t)LuaObject::getLuaInteger(L, -1, true, parms->signal_confidence, &provided);
+            if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_SIGNAL_CONFIDENCE, (int)parms->signal_confidence);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_POLYGON);
-        get_lua_polygon(L, -1, &parms, &provided);
-        if(provided) mlog(INFO, "Setting %s to %d points", LUA_PARM_POLYGON, (int)parms.points_in_polygon);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_POLYGON);
+            get_lua_polygon(L, -1, parms, &provided);
+            if(provided) mlog(INFO, "Setting %s to %d points", LUA_PARM_POLYGON, (int)parms->points_in_polygon);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_STAGES);
-        get_lua_stages(L, -1, &parms, &provided);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_STAGES);
+            get_lua_stages(L, -1, parms, &provided);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_COMPACT);
-        parms.compact = LuaObject::getLuaBoolean(L, -1, true, parms.compact, &provided);
-        if(provided) mlog(INFO, "Setting %s to %s", LUA_PARM_COMPACT, parms.compact ? "true" : "false");
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_COMPACT);
+            parms->compact = LuaObject::getLuaBoolean(L, -1, true, parms->compact, &provided);
+            if(provided) mlog(INFO, "Setting %s to %s", LUA_PARM_COMPACT, parms->compact ? "true" : "false");
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_MAX_ITERATIONS);
-        parms.max_iterations = LuaObject::getLuaInteger(L, -1, true, parms.max_iterations, &provided);
-        if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_MAX_ITERATIONS, (int)parms.max_iterations);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_MAX_ITERATIONS);
+            parms->max_iterations = LuaObject::getLuaInteger(L, -1, true, parms->max_iterations, &provided);
+            if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_MAX_ITERATIONS, (int)parms->max_iterations);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_ALONG_TRACK_SPREAD);
-        parms.along_track_spread = LuaObject::getLuaFloat(L, -1, true, parms.along_track_spread, &provided);
-        if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_ALONG_TRACK_SPREAD, parms.along_track_spread);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_ALONG_TRACK_SPREAD);
+            parms->along_track_spread = LuaObject::getLuaFloat(L, -1, true, parms->along_track_spread, &provided);
+            if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_ALONG_TRACK_SPREAD, parms->along_track_spread);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_MIN_PHOTON_COUNT);
-        parms.minimum_photon_count = LuaObject::getLuaInteger(L, -1, true, parms.minimum_photon_count, &provided);
-        if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_MIN_PHOTON_COUNT, parms.minimum_photon_count);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_MIN_PHOTON_COUNT);
+            parms->minimum_photon_count = LuaObject::getLuaInteger(L, -1, true, parms->minimum_photon_count, &provided);
+            if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_MIN_PHOTON_COUNT, parms->minimum_photon_count);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_MIN_WINDOW);
-        parms.minimum_window = LuaObject::getLuaFloat(L, -1, true, parms.minimum_window, &provided);
-        if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_MIN_WINDOW, parms.minimum_window);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_MIN_WINDOW);
+            parms->minimum_window = LuaObject::getLuaFloat(L, -1, true, parms->minimum_window, &provided);
+            if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_MIN_WINDOW, parms->minimum_window);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_MAX_ROBUST_DISPERSION);
-        parms.maximum_robust_dispersion = LuaObject::getLuaFloat(L, -1, true, parms.maximum_robust_dispersion, &provided);
-        if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_MAX_ROBUST_DISPERSION, parms.maximum_robust_dispersion);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_MAX_ROBUST_DISPERSION);
+            parms->maximum_robust_dispersion = LuaObject::getLuaFloat(L, -1, true, parms->maximum_robust_dispersion, &provided);
+            if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_MAX_ROBUST_DISPERSION, parms->maximum_robust_dispersion);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_EXTENT_LENGTH);
-        parms.extent_length = LuaObject::getLuaFloat(L, -1, true, parms.extent_length, &provided);
-        if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_EXTENT_LENGTH, parms.extent_length);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_EXTENT_LENGTH);
+            parms->extent_length = LuaObject::getLuaFloat(L, -1, true, parms->extent_length, &provided);
+            if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_EXTENT_LENGTH, parms->extent_length);
+            lua_pop(L, 1);
 
-        lua_getfield(L, index, LUA_PARM_EXTENT_STEP);
-        parms.extent_step = LuaObject::getLuaFloat(L, -1, true, parms.extent_step, &provided);
-        if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_EXTENT_STEP, parms.extent_step);
-        lua_pop(L, 1);
+            lua_getfield(L, index, LUA_PARM_EXTENT_STEP);
+            parms->extent_step = LuaObject::getLuaFloat(L, -1, true, parms->extent_step, &provided);
+            if(provided) mlog(INFO, "Setting %s to %lf", LUA_PARM_EXTENT_STEP, parms->extent_step);
+            lua_pop(L, 1);
+        }
+        catch(const RunTimeException& e)
+        {
+            delete parms; // free allocated parms since it won't be owned by anything else
+            throw; // rethrow exception
+        }
     }
 
     return parms;

@@ -96,7 +96,7 @@ int Atl03Reader::luaCreate (lua_State* L)
         /* Get URL */
         const char* url = getLuaString(L, 1);
         const char* outq_name = getLuaString(L, 2);
-        atl06_parms_t parms = getLuaAtl06Parms(L, 3);
+        atl06_parms_t* parms = getLuaAtl06Parms(L, 3);
         int track = getLuaInteger(L, 4, true, ALL_TRACKS);
 
         /* Return Reader Object */
@@ -130,11 +130,12 @@ void Atl03Reader::init (void)
 /*----------------------------------------------------------------------------
  * Constructor
  *----------------------------------------------------------------------------*/
-Atl03Reader::Atl03Reader (lua_State* L, const char* url, const char* outq_name, const atl06_parms_t& _parms, int track):
+Atl03Reader::Atl03Reader (lua_State* L, const char* url, const char* outq_name, atl06_parms_t* _parms, int track):
     LuaObject(L, OBJECT_TYPE, LuaMetaName, LuaMetaTable)
 {
     assert(url);
     assert(outq_name);
+    assert(_parms);
 
     /* Create Publisher */
     outQ = new Publisher(outq_name);
@@ -194,6 +195,7 @@ Atl03Reader::~Atl03Reader (void)
     }
 
     delete outQ;
+    delete parms;
 }
 
 /*----------------------------------------------------------------------------
@@ -214,7 +216,7 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
     }
 
     /* Determine Spatial Extent */
-    if(info->reader->parms.points_in_polygon > 0)
+    if(info->reader->parms->points_in_polygon > 0)
     {
         /* Determine Best Projection To Use */
         MathLib::proj_t projection = MathLib::PLATE_CARREE;
@@ -223,10 +225,10 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
 
         /* Project Polygon */
         List<MathLib::point_t> projected_poly;
-        for(int i = 0; i < info->reader->parms.points_in_polygon; i++)
+        for(int i = 0; i < info->reader->parms->points_in_polygon; i++)
         {
-            MathLib::point_t projected_point;
-            MathLib::coord2point(info->reader->parms.polygon[i], projected_point, projection);
+            MathLib::coord_t c = info->reader->parms->polygon[i];
+            MathLib::point_t projected_point = MathLib::coord2point(info->reader->parms->polygon[i], projection);
             projected_poly.add(projected_point);
         }
 
@@ -241,9 +243,8 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
                 bool inclusion = false;
 
                 /* Project Segment Coordinate */
-                MathLib::point_t segment_point; // output
                 MathLib::coord_t segment_coord = {segment_lat.gt[t][segment], segment_lon.gt[t][segment]};
-                MathLib::coord2point(segment_coord, segment_point, projection);
+                MathLib::point_t segment_point = MathLib::coord2point(segment_coord, projection);
 
                 /* Test Inclusion */
                 if(MathLib::inpoly(projected_poly, segment_point))
@@ -353,7 +354,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         GTArray<double>     segment_dist_x      (url, track, "geolocation/segment_dist_x", context, 0, region.first_segment, region.num_segments);
         GTArray<float>      dist_ph_along       (url, track, "heights/dist_ph_along", context, 0, region.first_photon, region.num_photons);
         GTArray<float>      h_ph                (url, track, "heights/h_ph", context, 0, region.first_photon, region.num_photons);
-        GTArray<char>       signal_conf_ph      (url, track, "heights/signal_conf_ph", context, reader->parms.surface_type, region.first_photon, region.num_photons);
+        GTArray<char>       signal_conf_ph      (url, track, "heights/signal_conf_ph", context, reader->parms->surface_type, region.first_photon, region.num_photons);
         GTArray<double>     bckgrd_delta_time   (url, track, "bckgrd_atlas/delta_time", context);
         GTArray<float>      bckgrd_rate         (url, track, "bckgrd_atlas/bckgrd_rate", context);
 
@@ -419,7 +420,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                     double along_track_distance = delta_distance + dist_ph_along.gt[t][current_photon];
 
                     /* Set Next Extent's First Photon */
-                    if(!step_complete && along_track_distance >= reader->parms.extent_step)
+                    if(!step_complete && along_track_distance >= reader->parms->extent_step)
                     {
                         ph_in[t] = current_photon;
                         seg_in[t] = current_segment;
@@ -428,13 +429,13 @@ void* Atl03Reader::atl06Thread (void* parm)
                     }
 
                     /* Check if Photon within Extent's Length */
-                    if(along_track_distance < reader->parms.extent_length)
+                    if(along_track_distance < reader->parms->extent_length)
                     {
                         /* Check Photon Signal Confidence Level */
-                        if(signal_conf_ph.gt[t][current_photon] >= reader->parms.signal_confidence)
+                        if(signal_conf_ph.gt[t][current_photon] >= reader->parms->signal_confidence)
                         {
                             photon_t ph = {
-                                .distance_x = delta_distance + dist_ph_along.gt[t][current_photon] - (reader->parms.extent_step / 2.0),
+                                .distance_x = delta_distance + dist_ph_along.gt[t][current_photon] - (reader->parms->extent_step / 2.0),
                                 .height_y = h_ph.gt[t][current_photon]
                             };
                             extent_photons[t].add(ph);
@@ -450,7 +451,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 }
 
                 /* Add Step to Start Distance */
-                start_distance[t] += reader->parms.extent_step;
+                start_distance[t] += reader->parms->extent_step;
 
                 /* Apply Segment Distance Correction and Update Start Segment */
                 while( ((start_segment[t] + 1) < segment_dist_x.gt[t].size) &&
@@ -468,7 +469,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 }
 
                 /* Check Photon Count */
-                if(extent_photons[t].length() < reader->parms.minimum_photon_count)
+                if(extent_photons[t].length() < reader->parms->minimum_photon_count)
                 {
                     extent_valid[t] = false;
                 }
@@ -478,7 +479,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 {
                     int32_t last = extent_photons[t].length() - 1;
                     double along_track_spread = extent_photons[t][last].distance_x - extent_photons[t][0].distance_x;
-                    if(along_track_spread < reader->parms.along_track_spread)
+                    if(along_track_spread < reader->parms->along_track_spread)
                     {
                         extent_valid[t] = false;
                     }
@@ -527,7 +528,7 @@ void* Atl03Reader::atl06Thread (void* parm)
 
                     /* Populate Attributes */
                     extent->segment_id[t]       = segment_id.gt[t][extent_segment[t]];
-                    extent->segment_size[t]     = reader->parms.extent_step;
+                    extent->segment_size[t]     = reader->parms->extent_step;
                     extent->background_rate[t]  = bckgrd_rate.gt[t][bckgrd_in[t]];
                     extent->gps_time[t]         = sdp_gps_epoch[0] + segment_delta_time.gt[t][extent_segment[t]];
                     extent->latitude[t]         = region.segment_lat.gt[t][extent_segment[t]];
@@ -637,12 +638,12 @@ int Atl03Reader::luaParms (lua_State* L)
     {
         /* Create Parameter Table */
         lua_newtable(L);
-        LuaEngine::setAttrInt(L, LUA_PARM_SURFACE_TYPE,         lua_obj->parms.surface_type);
-        LuaEngine::setAttrInt(L, LUA_PARM_SIGNAL_CONFIDENCE,    lua_obj->parms.signal_confidence);
-        LuaEngine::setAttrNum(L, LUA_PARM_ALONG_TRACK_SPREAD,   lua_obj->parms.along_track_spread);
-        LuaEngine::setAttrInt(L, LUA_PARM_MIN_PHOTON_COUNT,     lua_obj->parms.minimum_photon_count);
-        LuaEngine::setAttrNum(L, LUA_PARM_EXTENT_LENGTH,        lua_obj->parms.extent_length);
-        LuaEngine::setAttrNum(L, LUA_PARM_EXTENT_STEP,          lua_obj->parms.extent_step);
+        LuaEngine::setAttrInt(L, LUA_PARM_SURFACE_TYPE,         lua_obj->parms->surface_type);
+        LuaEngine::setAttrInt(L, LUA_PARM_SIGNAL_CONFIDENCE,    lua_obj->parms->signal_confidence);
+        LuaEngine::setAttrNum(L, LUA_PARM_ALONG_TRACK_SPREAD,   lua_obj->parms->along_track_spread);
+        LuaEngine::setAttrInt(L, LUA_PARM_MIN_PHOTON_COUNT,     lua_obj->parms->minimum_photon_count);
+        LuaEngine::setAttrNum(L, LUA_PARM_EXTENT_LENGTH,        lua_obj->parms->extent_length);
+        LuaEngine::setAttrNum(L, LUA_PARM_EXTENT_STEP,          lua_obj->parms->extent_step);
 
         /* Set Success */
         status = true;

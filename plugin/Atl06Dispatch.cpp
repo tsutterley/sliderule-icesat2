@@ -139,7 +139,7 @@ int Atl06Dispatch::luaCreate (lua_State* L)
     {
         /* Get Parameters */
         const char* outq_name = getLuaString(L, 1);
-        atl06_parms_t atl06_parms = getLuaAtl06Parms(L, 2);
+        atl06_parms_t* atl06_parms = getLuaAtl06Parms(L, 2);
 
         /* Create ATL06 Dispatch */
         return createLuaObject(L, new Atl06Dispatch(L, outq_name, atl06_parms));
@@ -184,10 +184,11 @@ void Atl06Dispatch::init (void)
 /*----------------------------------------------------------------------------
  * Constructor
  *----------------------------------------------------------------------------*/
-Atl06Dispatch::Atl06Dispatch (lua_State* L, const char* outq_name, const atl06_parms_t _parms):
+Atl06Dispatch::Atl06Dispatch (lua_State* L, const char* outq_name, const atl06_parms_t* _parms):
     DispatchObject(L, LuaMetaName, LuaMetaTable)
 {
     assert(outq_name);
+    assert(_parms);
 
     /* Initialize Parameters */
     parms = _parms;
@@ -197,7 +198,7 @@ Atl06Dispatch::Atl06Dispatch (lua_State* L, const char* outq_name, const atl06_p
      * this extends the memory available past the one elevation provided in the
      * definition.
      */
-    if(!parms.compact)
+    if(!parms->compact)
     {
         recObj = new RecordObject(atRecType, sizeof(atl06_t));
         recData = (atl06_t*)recObj->getRecordData();
@@ -221,8 +222,9 @@ Atl06Dispatch::Atl06Dispatch (lua_State* L, const char* outq_name, const atl06_p
  *----------------------------------------------------------------------------*/
 Atl06Dispatch::~Atl06Dispatch(void)
 {
-    if(outQ) delete outQ;
-    if(recObj) delete recObj;
+    delete outQ;
+    delete recObj;
+    delete parms;
 }
 
 /*----------------------------------------------------------------------------
@@ -272,7 +274,7 @@ bool Atl06Dispatch::processRecord (RecordObject* record, okey_t key)
     calculateBeam((sc_orient_t)extent->spacecraft_orientation, (track_t)extent->reference_pair_track, result);
 
     /* Execute Algorithm Stages */
-    if(parms.stages[STAGE_LSF]) iterativeFitStage(extent, result);
+    if(parms->stages[STAGE_LSF]) iterativeFitStage(extent, result);
 
     /* Post Elevation  */
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
@@ -369,7 +371,7 @@ void Atl06Dispatch::postResult (elevation_t* elevation)
         /* Populate Elevation */
         if(elevation)
         {
-            if(!parms.compact)
+            if(!parms->compact)
             {
                 recData->elevation[elevationIndex++] = *elevation;
             }
@@ -391,7 +393,7 @@ void Atl06Dispatch::postResult (elevation_t* elevation)
             int size = recObj->serialize(&buffer, RecordObject::REFERENCE);
 
             /* Adjust Size (according to number of elevations) */
-            if(!parms.compact)
+            if(!parms->compact)
             {
                 size -= (BATCH_SIZE - elevationIndex) * sizeof(elevation_t);
             }
@@ -443,7 +445,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             int num_photons = result[t].elevation.photon_count;
 
             /* Check Photon Count */
-            if(num_photons < parms.minimum_photon_count)
+            if(num_photons < parms->minimum_photon_count)
             {
                 result[t].invalid = true;
                 done = true;
@@ -458,7 +460,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             result[t].provided = true;
 
             /* Check Spread */
-            if( (fit.x_max - fit.x_min) < parms.along_track_spread )
+            if( (fit.x_max - fit.x_min) < parms->along_track_spread )
             {
                 result[t].invalid = true;
                 done = true;
@@ -466,7 +468,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             }
 
             /* Check Iterations */
-            if(iteration++ > parms.max_iterations)
+            if(iteration++ > parms->max_iterations)
             {
                 done = true;
                 continue;
@@ -561,8 +563,8 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             double sigma_expected = sqrt(se1 + se2); // sigma_expected, section 5.5, procedure 4d
 
             /* Calculate Window Height */
-            if(sigma_r > parms.maximum_robust_dispersion) sigma_r = parms.maximum_robust_dispersion;
-            double new_window_height = MAX(MAX(parms.minimum_window, 6.0 * sigma_expected), 6.0 * sigma_r); // H_win, section 5.5, procedure 4e
+            if(sigma_r > parms->maximum_robust_dispersion) sigma_r = parms->maximum_robust_dispersion;
+            double new_window_height = MAX(MAX(parms->minimum_window, 6.0 * sigma_expected), 6.0 * sigma_r); // H_win, section 5.5, procedure 4e
             result[t].elevation.window_height = MAX(new_window_height, 0.75 * result[t].elevation.window_height); // section 5.7, procedure 2e
             double window_spread = result[t].elevation.window_height / 2.0;
 

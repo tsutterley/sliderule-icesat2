@@ -156,20 +156,20 @@ class Atl03Reader: public LuaObject
          * Data
          *--------------------------------------------------------------------*/
 
-        bool                    active;
-        Thread*                 readerPid[NUM_TRACKS];
-        Mutex                   threadMut;
-        int                     threadCount;
-        int                     numComplete;
-        Publisher*              outQ;
-        atl06_parms_t           parms;
-        stats_t                 stats;
+        bool                active;
+        Thread*             readerPid[NUM_TRACKS];
+        Mutex               threadMut;
+        int                 threadCount;
+        int                 numComplete;
+        Publisher*          outQ;
+        atl06_parms_t*      parms;
+        stats_t             stats;
 
         /*--------------------------------------------------------------------
          * Methods
          *--------------------------------------------------------------------*/
 
-                            Atl03Reader         (lua_State* L, const char* url, const char* outq_name, const atl06_parms_t& _parms, int track=ALL_TRACKS);
+                            Atl03Reader         (lua_State* L, const char* url, const char* outq_name, atl06_parms_t* _parms, int track=ALL_TRACKS);
                             ~Atl03Reader        (void);
 
         static void*        atl06Thread         (void* parm);

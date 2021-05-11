@@ -59,7 +59,7 @@
 #define LUA_PARM_MIN_WINDOW                     "H_min_win"
 #define LUA_PARM_MAX_ROBUST_DISPERSION          "sigma_r_max"
 #define LUA_PARM_STAGE_LSF                      "LSF"
-#define LUA_PARM_MAX_COORDS                     32
+#define LUA_PARM_MAX_COORDS                     16384
 
 /******************************************************************************
  * TYPEDEFS
@@ -124,7 +124,7 @@ typedef struct {
     signal_conf_t           signal_confidence;              // minimal allowed signal confidence
     bool                    stages[NUM_STAGES];             // algorithm iterations
     bool                    compact;                        // return compact (only lat,lon,height,time) elevation information
-    MathLib::coord_t        polygon[LUA_PARM_MAX_COORDS];   // bounding region
+    List<MathLib::coord_t>  polygon;                        // bounding region
     int                     points_in_polygon;              // 
     int                     max_iterations;                 // least squares fit iterations
     double                  along_track_spread;             // meters
@@ -139,6 +139,6 @@ typedef struct {
  * EXPORTED FUNCTIONS
  ******************************************************************************/
 
-atl06_parms_t getLuaAtl06Parms (lua_State* L, int index);
+atl06_parms_t* getLuaAtl06Parms (lua_State* L, int index);
 
 #endif  /* __lua_parms__ */
