@@ -224,12 +224,11 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
         else if(segment_lat.gt[PRT_LEFT][0] < -60.0) projection = MathLib::SOUTH_POLAR;
 
         /* Project Polygon */
-        List<MathLib::point_t> projected_poly;
+        List<MathLib::coord_t>::Iterator poly_iterator(info->reader->parms->polygon);
+        MathLib::point_t* projected_poly = new MathLib::point_t [info->reader->parms->points_in_polygon];
         for(int i = 0; i < info->reader->parms->points_in_polygon; i++)
         {
-            MathLib::coord_t c = info->reader->parms->polygon[i];
-            MathLib::point_t projected_point = MathLib::coord2point(info->reader->parms->polygon[i], projection);
-            projected_poly.add(projected_point);
+            projected_poly[i] = MathLib::coord2point(poly_iterator[i], projection);
         }
 
         /* Find First Segment In Polygon */
@@ -247,7 +246,7 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
                 MathLib::point_t segment_point = MathLib::coord2point(segment_coord, projection);
 
                 /* Test Inclusion */
-                if(MathLib::inpoly(projected_poly, segment_point))
+                if(MathLib::inpoly(projected_poly, info->reader->parms->points_in_polygon, segment_point))
                 {
                     inclusion = true;
                 }
@@ -297,6 +296,9 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
                 num_segments[t] = segment - first_segment[t];
             }
         }
+
+        /* Delete Projected Polygon */
+        delete [] projected_poly;
 
         /* Check If Anything to Process */
         if(num_photons[PRT_LEFT] < 0 || num_photons[PRT_RIGHT] < 0)
