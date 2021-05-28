@@ -2,6 +2,19 @@ local global = require("global")
 local asset = require("asset")
 local json = require("json")
 
+-- Function to return all available system scripts
+function available_scripts()
+    local pdir = io.popen('ls "' .. __confdir .. '"')
+    local scripts = {}
+    local i = 0
+    for filename in pdir:lines() do
+        i = i + 1
+        scripts[i] = filename
+    end
+    pdir:close()
+    return scripts
+end
+
 -- Process Arguments: JSON Configuration File
 local cfgtbl = {}
 local json_input = arg[1]
@@ -23,7 +36,8 @@ local asset_directory = cfgtbl["asset_directory"] or nil
 sys.setlvl(core.LOG | core.TRACE | core.METRIC, event_level) -- set level globally
 local monitor = core.monitor(core.LOG, core.INFO, event_format) -- monitor only logs
 monitor:name("EventMonitor")
-local dispatcher = core.dispatcher(core.MONITORQ)
+monitor:tail(1024)
+local dispatcher = core.dispatcher(core.EVENTQ)
 dispatcher:name("EventDispatcher")
 dispatcher:attach(monitor, "eventrec")
 dispatcher:run()
@@ -31,9 +45,19 @@ dispatcher:run()
 -- Configure Assets --
 assets = asset.loaddir(asset_directory, true)
 
--- Configure and Run Server --
-server = core.httpd(port)
-server:name("HttpServer")
+-- Configure Endpoint --
 endpoint = core.endpoint()
 endpoint:name("LuaEndpoint")
+endpoint:metric() -- catchall
+for _,script in ipairs(available_scripts()) do
+    local s = script:find(".lua")
+    if s then
+        local metric_name = script:sub(0,s-1)
+        endpoint:metric(metric_name) 
+    end
+end
+
+-- Run Server --
+server = core.httpd(port)
+server:name("HttpServer")
 server:attach(endpoint, "/source")
