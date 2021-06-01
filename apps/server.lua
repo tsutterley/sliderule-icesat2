@@ -57,6 +57,10 @@ for _,script in ipairs(available_scripts()) do
     end
 end
 
+-- Run Earth Data Authentication Script --
+auth_script = core.script("earth_data_auth", "")
+auth_script:name("auth_script")
+
 -- Run Server --
 server = core.httpd(port)
 server:name("HttpServer")
