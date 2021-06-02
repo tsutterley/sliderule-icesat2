@@ -58,7 +58,6 @@ target_include_directories (icesat2
 # Script Installation #
 install (
     FILES
-        ${CMAKE_CURRENT_LIST_DIR}/extensions/earth_data_auth.lua
         ${CMAKE_CURRENT_LIST_DIR}/endpoints/atl06.lua
         ${CMAKE_CURRENT_LIST_DIR}/endpoints/atl03s.lua
         ${CMAKE_CURRENT_LIST_DIR}/endpoints/indexer.lua
