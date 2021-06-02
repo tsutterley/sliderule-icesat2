@@ -146,7 +146,7 @@ int Atl06Dispatch::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating %s: %s", LuaMetaName, e.what());
+        mlog(e.level(), "Error creating %s: %s", LuaMetaName, e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -652,7 +652,7 @@ int Atl06Dispatch::luaStats (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error configuring %s: %s", LuaMetaName, e.what());
+        mlog(e.level(), "Error configuring %s: %s", LuaMetaName, e.what());
     }
 
     /* Return Status */

@@ -104,7 +104,7 @@ int Atl03Reader::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating Atl03Reader: %s", e.what());
+        mlog(e.level(), "Error creating Atl03Reader: %s", e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -303,7 +303,7 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
         /* Check If Anything to Process */
         if(num_photons[PRT_LEFT] < 0 || num_photons[PRT_RIGHT] < 0)
         {
-            throw RunTimeException("empty spatial region");
+            throw RunTimeException(INFO, "empty spatial region");
         }
     }
 
@@ -575,9 +575,9 @@ void* Atl03Reader::atl06Thread (void* parm)
             }
         }
     }
-    catch(const std::exception& e)
+    catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Failure during processing of resource %s track %d: %s", url, track, e.what());
+        mlog(e.level(), "Failure during processing of resource %s track %d: %s", url, track, e.what());
     }
 
     /* Tear Down Context */
@@ -653,7 +653,7 @@ int Atl03Reader::luaParms (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error returning parameters %s: %s", lua_obj->getName(), e.what());
+        mlog(e.level(), "Error returning parameters %s: %s", lua_obj->getName(), e.what());
     }
 
     /* Return Status */
@@ -701,7 +701,7 @@ int Atl03Reader::luaStats (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error returning stats %s: %s", lua_obj->getName(), e.what());
+        mlog(e.level(), "Error returning stats %s: %s", lua_obj->getName(), e.what());
     }
 
     /* Return Status */

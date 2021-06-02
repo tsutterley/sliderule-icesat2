@@ -66,7 +66,7 @@ int UT_Atl06Dispatch::luaCreate (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error creating %s: %s", LuaMetaName, e.what());
+        mlog(e.level(), "Error creating %s: %s", LuaMetaName, e.what());
         return returnLuaStatus(L, false);
     }
 }
@@ -126,7 +126,7 @@ int UT_Atl06Dispatch::luaLsfTest (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error executing test %s: %s", __FUNCTION__, e.what());
+        mlog(e.level(), "Error executing test %s: %s", __FUNCTION__, e.what());
     }
 
     /* Return Status */
@@ -191,7 +191,7 @@ int UT_Atl06Dispatch::luaSortTest (lua_State* L)
     }
     catch(const RunTimeException& e)
     {
-        mlog(CRITICAL, "Error executing test %s: %s", __FUNCTION__, e.what());
+        mlog(e.level(), "Error executing test %s: %s", __FUNCTION__, e.what());
     }
 
     /* Return Status */
