@@ -123,7 +123,8 @@ class Atl03Reader: public LuaObject
 
         typedef struct {
             Atl03Reader*    reader;
-            const char*     url;
+            const Asset*    asset;
+            const char*     resource;
             int             track;
         } info_t;
 
@@ -169,7 +170,7 @@ class Atl03Reader: public LuaObject
          * Methods
          *--------------------------------------------------------------------*/
 
-                            Atl03Reader         (lua_State* L, const char* url, const char* outq_name, atl06_parms_t* _parms, int track=ALL_TRACKS);
+                            Atl03Reader         (lua_State* L, const Asset* asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track=ALL_TRACKS);
                             ~Atl03Reader        (void);
 
         static void*        atl06Thread         (void* parm);

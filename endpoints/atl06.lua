@@ -22,7 +22,6 @@
 --
 
 local json = require("json")
-local asset = require("asset")
 
 -- Create User Status --
 local userlog = msg.publish(rspq)
@@ -34,6 +33,13 @@ local resource = rqst["resource"]
 local track = rqst["track"] or icesat2.ALL_TRACKS
 local parms = rqst["parms"]
 local timeout = rqst["timeout"] or core.PEND
+
+-- Get Asset --
+asset = core.getbyname(atl03_asset)
+if not asset then
+    userlog:sendlog(core.INFO, string.format("invalid asset specified: %s", atl03_asset))
+    return
+end
 
 -- Check Stages --
 local recq = rspq .. "-atl03"
@@ -52,8 +58,7 @@ atl06_disp:attach(atl06_algo, "atl03rec")
 atl06_disp:run()
 
 -- ATL03 Reader --
-local resource_url = asset.buildurl(atl03_asset, resource)
-atl03_reader = icesat2.atl03(resource_url, recq, parms, track)
+atl03_reader = icesat2.atl03(asset, resource, recq, parms, track)
 atl03_reader:name("atl03_reader")
 
 -- Wait Until Completion --

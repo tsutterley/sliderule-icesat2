@@ -213,7 +213,6 @@ void* Atl03Indexer::indexerThread (void* parm)
     {
         while(!complete)
         {
-            char url[MAX_STR_SIZE];
             const char* resource_name = NULL;
 
             /* Get Next Resource in List */            
@@ -222,7 +221,6 @@ void* Atl03Indexer::indexerThread (void* parm)
                 if(indexer->resourceEntry < indexer->resources->length())
                 {
                     resource_name = indexer->resources->get(indexer->resourceEntry);
-                    StringLib::format(url, MAX_STR_SIZE, "%s%s", prefix, resource_name);
                     indexer->resourceEntry++;
                 }
                 else
@@ -239,15 +237,15 @@ void* Atl03Indexer::indexerThread (void* parm)
                 context = new H5Api::context_t;
 
                 /* Read Data from HDF5 File */
-                H5Array<double>     sdp_gps_epoch       (url, "/ancillary_data/atlas_sdp_gps_epoch", context);
-                H5Array<double>     start_delta_time    (url, "/ancillary_data/start_delta_time", context);
-                H5Array<double>     end_delta_time      (url, "/ancillary_data/end_delta_time", context);
-                H5Array<int8_t>     cycle               (url, "/orbit_info/cycle_number", context);
-                H5Array<uint16_t>   rgt                 (url, "/orbit_info/rgt", context);
-                H5Array<double>     gt3r_lat            (url, "/gt3r/geolocation/reference_photon_lat", context, 0, 0, 1);
-                H5Array<double>     gt3r_lon            (url, "/gt3r/geolocation/reference_photon_lon", context, 0, 0, 1);
-                H5Array<double>     gt1l_lat            (url, "/gt1l/geolocation/reference_photon_lat", context);
-                H5Array<double>     gt1l_lon            (url, "/gt1l/geolocation/reference_photon_lon", context);
+                H5Array<double>     sdp_gps_epoch       (indexer->asset, resource_name, "/ancillary_data/atlas_sdp_gps_epoch", context);
+                H5Array<double>     start_delta_time    (indexer->asset, resource_name, "/ancillary_data/start_delta_time", context);
+                H5Array<double>     end_delta_time      (indexer->asset, resource_name, "/ancillary_data/end_delta_time", context);
+                H5Array<int8_t>     cycle               (indexer->asset, resource_name, "/orbit_info/cycle_number", context);
+                H5Array<uint16_t>   rgt                 (indexer->asset, resource_name, "/orbit_info/rgt", context);
+                H5Array<double>     gt3r_lat            (indexer->asset, resource_name, "/gt3r/geolocation/reference_photon_lat", context, 0, 0, 1);
+                H5Array<double>     gt3r_lon            (indexer->asset, resource_name, "/gt3r/geolocation/reference_photon_lon", context, 0, 0, 1);
+                H5Array<double>     gt1l_lat            (indexer->asset, resource_name, "/gt1l/geolocation/reference_photon_lat", context);
+                H5Array<double>     gt1l_lon            (indexer->asset, resource_name, "/gt1l/geolocation/reference_photon_lon", context);
 
                 /* Clean Up Context */
                 delete context;

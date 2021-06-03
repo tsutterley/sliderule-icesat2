@@ -8,7 +8,7 @@ csv = require("csv")
 local info = debug.getinfo(1,'S');
 local td = info.source:sub(2, string.find(info.source, "/[^/]*$"))
 
-assets = asset.loaddir(td.."/asset_directory.csv")
+assets = asset.loaddir() -- looks for asset_directory.csv in same directory this script is located in
 
 -- Unit Test --
 

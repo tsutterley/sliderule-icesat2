@@ -87,20 +87,21 @@ const struct luaL_Reg Atl03Reader::LuaMetaTable[] = {
  ******************************************************************************/
 
 /*----------------------------------------------------------------------------
- * luaCreate - create(<url>, <outq_name>, [<parms>], [<track>])
+ * luaCreate - create(<asset>, <resource>, <outq_name>, [<parms>], [<track>])
  *----------------------------------------------------------------------------*/
 int Atl03Reader::luaCreate (lua_State* L)
 {
     try
     {
         /* Get URL */
-        const char* url = getLuaString(L, 1);
-        const char* outq_name = getLuaString(L, 2);
-        atl06_parms_t* parms = getLuaAtl06Parms(L, 3);
-        int track = getLuaInteger(L, 4, true, ALL_TRACKS);
+        const Asset* asset = (const Asset*)getLuaObject(L, 1, Asset::OBJECT_TYPE);
+        const char* resource = getLuaString(L, 2);
+        const char* outq_name = getLuaString(L, 3);
+        atl06_parms_t* parms = getLuaAtl06Parms(L, 4);
+        int track = getLuaInteger(L, 5, true, ALL_TRACKS);
 
         /* Return Reader Object */
-        return createLuaObject(L, new Atl03Reader(L, url, outq_name, parms, track));
+        return createLuaObject(L, new Atl03Reader(L, asset, resource, outq_name, parms, track));
     }
     catch(const RunTimeException& e)
     {
@@ -130,10 +131,11 @@ void Atl03Reader::init (void)
 /*----------------------------------------------------------------------------
  * Constructor
  *----------------------------------------------------------------------------*/
-Atl03Reader::Atl03Reader (lua_State* L, const char* url, const char* outq_name, atl06_parms_t* _parms, int track):
+Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track):
     LuaObject(L, OBJECT_TYPE, LuaMetaName, LuaMetaTable)
 {
-    assert(url);
+    assert(asset);
+    assert(resource);
     assert(outq_name);
     assert(_parms);
 
@@ -165,7 +167,8 @@ Atl03Reader::Atl03Reader (lua_State* L, const char* url, const char* outq_name, 
         {
             info_t* info = new info_t;
             info->reader = this;
-            info->url = StringLib::duplicate(url);
+            info->asset = asset;
+            info->resource = StringLib::duplicate(resource);
             info->track = t + 1;
             readerPid[t] = new Thread(atl06Thread, info);
         }
@@ -176,7 +179,8 @@ Atl03Reader::Atl03Reader (lua_State* L, const char* url, const char* outq_name, 
         threadCount = 1;
         info_t* info = new info_t;
         info->reader = this;
-        info->url = StringLib::duplicate(url);
+        info->asset = asset;
+        info->resource = StringLib::duplicate(resource);
         info->track = track;
         atl06Thread(info);
     }
@@ -202,9 +206,9 @@ Atl03Reader::~Atl03Reader (void)
  * Region::Constructor
  *----------------------------------------------------------------------------*/
 Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
-    segment_lat    (info->url, info->track, "geolocation/reference_photon_lat", context),
-    segment_lon    (info->url, info->track, "geolocation/reference_photon_lon", context),
-    segment_ph_cnt (info->url, info->track, "geolocation/segment_ph_cnt",       context)
+    segment_lat    (info->asset, info->resource, info->track, "geolocation/reference_photon_lat", context),
+    segment_lon    (info->asset, info->resource, info->track, "geolocation/reference_photon_lon", context),
+    segment_ph_cnt (info->asset, info->resource, info->track, "geolocation/segment_ph_cnt",       context)
 {
     /* Initialize Region */
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
@@ -328,12 +332,13 @@ void* Atl03Reader::atl06Thread (void* parm)
     /* Get Thread Info */
     info_t* info = (info_t*)parm;
     Atl03Reader* reader = info->reader;
-    const char* url = info->url;
+    const Asset* asset = info->asset;
+    const char* resource = info->resource;
     int track = info->track;
     stats_t local_stats = {0, 0, 0, 0, 0};
 
     /* Start Trace */
-    uint32_t trace_id = start_trace(INFO, reader->traceId, "atl03_reader", "{\"url\":\"%s\", \"track\":%d}", url, track);
+    uint32_t trace_id = start_trace(INFO, reader->traceId, "atl03_reader", "{\"asset\":\"%s\", \"resource\":\"%s\", \"track\":%d}", info->asset->getName(), resource, track);
     EventLib::stashId (trace_id); // set thread specific trace id for H5Api
 
     /* Create H5 Context */
@@ -345,23 +350,23 @@ void* Atl03Reader::atl06Thread (void* parm)
         Region region(info, context);
 
         /* Read Data from HDF5 File */
-        H5Array<double>     sdp_gps_epoch       (url, "/ancillary_data/atlas_sdp_gps_epoch", context);
-        H5Array<int8_t>     sc_orient           (url, "/orbit_info/sc_orient", context);
-        H5Array<int32_t>    start_rgt           (url, "/ancillary_data/start_rgt", context);
-        H5Array<int32_t>    end_rgt             (url, "/ancillary_data/end_rgt", context);
-        H5Array<int32_t>    start_cycle         (url, "/ancillary_data/start_cycle", context);
-        H5Array<int32_t>    end_cycle           (url, "/ancillary_data/end_cycle", context);
-        GTArray<double>     segment_delta_time  (url, track, "geolocation/delta_time", context, 0, region.first_segment, region.num_segments);
-        GTArray<int32_t>    segment_id          (url, track, "geolocation/segment_id", context, 0, region.first_segment, region.num_segments);
-        GTArray<double>     segment_dist_x      (url, track, "geolocation/segment_dist_x", context, 0, region.first_segment, region.num_segments);
-        GTArray<float>      dist_ph_along       (url, track, "heights/dist_ph_along", context, 0, region.first_photon, region.num_photons);
-        GTArray<float>      h_ph                (url, track, "heights/h_ph", context, 0, region.first_photon, region.num_photons);
-        GTArray<char>       signal_conf_ph      (url, track, "heights/signal_conf_ph", context, reader->parms->surface_type, region.first_photon, region.num_photons);
-        GTArray<double>     bckgrd_delta_time   (url, track, "bckgrd_atlas/delta_time", context);
-        GTArray<float>      bckgrd_rate         (url, track, "bckgrd_atlas/bckgrd_rate", context);
+        H5Array<double>     sdp_gps_epoch       (asset, resource, "/ancillary_data/atlas_sdp_gps_epoch", context);
+        H5Array<int8_t>     sc_orient           (asset, resource, "/orbit_info/sc_orient", context);
+        H5Array<int32_t>    start_rgt           (asset, resource, "/ancillary_data/start_rgt", context);
+        H5Array<int32_t>    end_rgt             (asset, resource, "/ancillary_data/end_rgt", context);
+        H5Array<int32_t>    start_cycle         (asset, resource, "/ancillary_data/start_cycle", context);
+        H5Array<int32_t>    end_cycle           (asset, resource, "/ancillary_data/end_cycle", context);
+        GTArray<double>     segment_delta_time  (asset, resource, track, "geolocation/delta_time", context, 0, region.first_segment, region.num_segments);
+        GTArray<int32_t>    segment_id          (asset, resource, track, "geolocation/segment_id", context, 0, region.first_segment, region.num_segments);
+        GTArray<double>     segment_dist_x      (asset, resource, track, "geolocation/segment_dist_x", context, 0, region.first_segment, region.num_segments);
+        GTArray<float>      dist_ph_along       (asset, resource, track, "heights/dist_ph_along", context, 0, region.first_photon, region.num_photons);
+        GTArray<float>      h_ph                (asset, resource, track, "heights/h_ph", context, 0, region.first_photon, region.num_photons);
+        GTArray<char>       signal_conf_ph      (asset, resource, track, "heights/signal_conf_ph", context, reader->parms->surface_type, region.first_photon, region.num_photons);
+        GTArray<double>     bckgrd_delta_time   (asset, resource, track, "bckgrd_atlas/delta_time", context);
+        GTArray<float>      bckgrd_rate         (asset, resource, track, "bckgrd_atlas/bckgrd_rate", context);
 
         /* Early Tear Down of Context */
-        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", url, (unsigned long)context->read_rqsts, (unsigned long)context->bytes_read);
+        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", resource, (unsigned long)context->read_rqsts, (unsigned long)context->bytes_read);
         delete context;
         context = NULL;
 
@@ -577,7 +582,7 @@ void* Atl03Reader::atl06Thread (void* parm)
     }
     catch(const RunTimeException& e)
     {
-        mlog(e.level(), "Failure during processing of resource %s track %d: %s", url, track, e.what());
+        mlog(e.level(), "Failure during processing of resource %s track %d: %s", resource, track, e.what());
     }
 
     /* Tear Down Context */
@@ -597,7 +602,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         reader->numComplete++;
         if(reader->numComplete == reader->threadCount)
         {
-            mlog(CRITICAL, "Completed processing resource %s", url);
+            mlog(CRITICAL, "Completed processing resource %s", resource);
     
             /* Indicate End of Data */
             reader->outQ->postCopy("", 0);
@@ -607,7 +612,7 @@ void* Atl03Reader::atl06Thread (void* parm)
     reader->threadMut.unlock();
 
     /* Clean Up Info */
-    delete [] info->url;
+    delete [] info->resource;
     delete info;
 
     /* Stop Trace */

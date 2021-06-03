@@ -2,11 +2,13 @@ local runner = require("test_executive")
 console = require("console")
 json = require("json")
 
+asset = core.asset("local", "file", "/data/ATLAS", "empty.index")
+
 -- Unit Test --
 
 print('\n------------------\nTest01: Atl03 Reader \n------------------')
 
-f1 = icesat2.atl03("missing_file", "tmpq", {srt=icesat2.SRT_SEA_ICE, cnf=icesat2.CNF_NOT_CONSIDERED}, icesat2.RPT_1)
+f1 = icesat2.atl03(asset, "missing_file", "tmpq", {srt=icesat2.SRT_SEA_ICE, cnf=icesat2.CNF_NOT_CONSIDERED}, icesat2.RPT_1)
 p1 = f1:parms()
 
 runner.check(p1.srt == icesat2.SRT_SEA_ICE, "Failed to set surface type")
@@ -16,7 +18,7 @@ runner.check(p1.cnf == icesat2.CNF_NOT_CONSIDERED, "Failed to set signal confide
 print('\n------------------\nTest02: Atl03 Extent Record\n------------------')
 
 recq = msg.subscribe("recq")
-f2 = icesat2.atl03("file:///data/ATLAS/ATL03_20200304065203_10470605_003_01.h5", "recq", {}, icesat2.RPT_1)
+f2 = icesat2.atl03(asset, "ATL03_20200304065203_10470605_003_01.h5", "recq", {}, icesat2.RPT_1)
 extentrec = recq:recvrecord(3000)
 recq:destroy()
 

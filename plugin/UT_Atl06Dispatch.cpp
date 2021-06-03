@@ -37,6 +37,8 @@
 #include "UT_Atl06Dispatch.h"
 #include "Atl06Dispatch.h"
 
+#include <cmath>
+
 /******************************************************************************
  * STATIC DATA
  ******************************************************************************/
@@ -100,12 +102,13 @@ int UT_Atl06Dispatch::luaLsfTest (lua_State* L)
     try
     {
         bool tests_passed = true;
+        double tolerance = 0.0000001;
 
         /* Test 1 */
         const int l1 = 4;
         Atl06Dispatch::point_t v1[l1] = { {1.0, 2.0, 0.0}, {2.0, 4.0, 0.0}, {3.0, 6.0, 0.0}, {4.0, 8.0, 0.0} };
         Atl06Dispatch::lsf_t fit1 = Atl06Dispatch::lsf(v1, l1);
-        if(fit1.intercept != 0.0 || fit1.slope != 2.0)
+        if(fit1.intercept != 0.0 || fabs(fit1.slope - 2.0) > tolerance)
         {
             mlog(CRITICAL, "Failed LSF test01: %lf, %lf", fit1.intercept, fit1.slope);
             tests_passed = false;
@@ -115,7 +118,7 @@ int UT_Atl06Dispatch::luaLsfTest (lua_State* L)
         const int l2 = 4;
         Atl06Dispatch::point_t v2[l2] = { {1.0, 4.0, 0.0}, {2.0, 5.0, 0.0}, {3.0, 6.0, 0.0}, {4.0, 7.0, 0.0} };
         Atl06Dispatch::lsf_t fit2 = Atl06Dispatch::lsf(v2, l2);
-        if(fit2.intercept != 3.0 || fit2.slope != 1.0)
+        if(fabs(fit2.intercept - 3.0) > tolerance || fabs(fit2.slope - 1.0) > tolerance)
         {
             mlog(CRITICAL, "Failed LSF test02: %lf, %lf", fit2.intercept, fit2.slope);
             tests_passed = false;
