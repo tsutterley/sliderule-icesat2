@@ -57,12 +57,35 @@ Asset::IODriver* CumulusIODriver::create (const Asset* _asset)
 
 /*----------------------------------------------------------------------------
  * ioOpen
+ * 
+ *  Example: /ATLAS/ATL06/004/2019/06/26/ATL06_20190626143632_13640310_004_01.h5
  *----------------------------------------------------------------------------*/
 void CumulusIODriver::ioOpen (const char* resource)
 {
-    SafeString resourcepath("%s/%s", asset->getUrl(), resource);
+    const int NUM_ELEMENTS = 5;
+    char elements[NUM_ELEMENTS][MAX_STR_SIZE];
 
-    /* Allocate Memory */
+    StringLib::tokenizeLine(resource, MAX_STR_SIZE, '_', NUM_ELEMENTS, elements);
+
+    const char* product = elements[0];
+    const char* version = elements[3];
+    const char* date = elements[1];
+
+    char year[5];
+    StringLib::copy(&year[0], &date[0], 4);
+    year[4] = '\0';
+
+    char month[3];
+    StringLib::copy(&month[0], &date[4], 2);
+    month[2] = '\0';
+
+    char day[3];
+    StringLib::copy(&day[0], &date[6], 2);
+    day[2] = '\0';
+
+    SafeString resourcepath("%s/ATLAS/%s/%s/%s/%s/%s/%s", asset->getUrl(), product, version, year, month, day, resource);
+
+    /* Allocate Memory for ioBucket */
     ioBucket = StringLib::duplicate(resourcepath.getString());
 
     /* 
