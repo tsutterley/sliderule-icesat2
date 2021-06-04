@@ -29,29 +29,65 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __icesat2__
-#define __icesat2__
-
 /******************************************************************************
  * INCLUDES
  ******************************************************************************/
 
-#include "lua_parms.h"
-#include "Atl03Reader.h"
-#include "Atl03Indexer.h"
-#include "Atl06Dispatch.h"
 #include "CumulusIODriver.h"
-#include "GTArray.h"
-#include "UT_Atl06Dispatch.h"
+#include "core.h"
+#include "aws.h"
 
 /******************************************************************************
- * PROTOTYPES
+ * STATIC DATA
  ******************************************************************************/
 
-extern "C" {
-void initicesat2 (void);
+const char* CumulusIODriver::FORMAT = "cumulus";
+
+/******************************************************************************
+ * FILE IO DRIVER CLASS
+ ******************************************************************************/
+
+/*----------------------------------------------------------------------------
+ * create
+ *----------------------------------------------------------------------------*/
+Asset::IODriver* CumulusIODriver::create (const Asset* _asset)
+{
+    return new CumulusIODriver(_asset);
 }
 
-#endif  /* __icesat2__ */
+/*----------------------------------------------------------------------------
+ * ioOpen
+ *----------------------------------------------------------------------------*/
+void CumulusIODriver::ioOpen (const char* resource)
+{
+    SafeString resourcepath("%s/%s", asset->getUrl(), resource);
 
+    /* Allocate Memory */
+    ioBucket = StringLib::duplicate(resourcepath.getString());
 
+    /* 
+    * Differentiate Bucket and Key
+    *  <bucket_name>/<path_to_file>/<filename>
+    *  |             |
+    * ioBucket      ioKey
+    */
+    ioKey = ioBucket;
+    while(*ioKey != '\0' && *ioKey != '/') ioKey++;
+    if(*ioKey == '/') *ioKey = '\0';
+    else throw RunTimeException(CRITICAL, "invalid S3 url: %s", resource);
+    ioKey++;
+}
+
+/*----------------------------------------------------------------------------
+ * Constructor
+ *----------------------------------------------------------------------------*/
+CumulusIODriver::CumulusIODriver (const Asset* _asset): S3IODriver(_asset)
+{ 
+}
+
+/*----------------------------------------------------------------------------
+ * Destructor
+ *----------------------------------------------------------------------------*/
+CumulusIODriver::~CumulusIODriver (void) 
+{ 
+}

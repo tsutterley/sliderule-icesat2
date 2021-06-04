@@ -34,7 +34,7 @@ userlog:sendlog(core.INFO, string.format("atl03 indexing initiated on %s data...
 
 -- Index Asset --  
 local atl03 = core.getbyname(atl03_asset)
-local name, format, url, index_filename, status = atl03:info()
+local name, format, url, index_filename, region, endpoint, status = atl03:info()
 local indexer = icesat2.atl03indexer(atl03, resources, rspq)
 
 -- Wait Until Completion --

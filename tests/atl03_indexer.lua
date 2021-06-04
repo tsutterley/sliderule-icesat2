@@ -19,7 +19,7 @@ local filelist = { "ATL03_20181019065445_03150111_003_01.h5",
 
 -- load asset 
 local atl03 = core.getbyname("atlas-local")
-local name, format, url, index_filename, status = atl03:info()
+local name, format, url, index_filename, region, endpoint, status = atl03:info()
 runner.check(status)
 
 -- setup index file writer

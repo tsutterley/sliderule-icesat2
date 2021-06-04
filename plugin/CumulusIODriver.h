@@ -29,29 +29,45 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __icesat2__
-#define __icesat2__
+#ifndef __cumulus_io_driver__
+#define __cumulus_io_driver__
 
 /******************************************************************************
  * INCLUDES
  ******************************************************************************/
 
-#include "lua_parms.h"
-#include "Atl03Reader.h"
-#include "Atl03Indexer.h"
-#include "Atl06Dispatch.h"
-#include "CumulusIODriver.h"
-#include "GTArray.h"
-#include "UT_Atl06Dispatch.h"
+#include "Asset.h"
+#include "S3IODriver.h"
 
 /******************************************************************************
- * PROTOTYPES
+ * S3 IO DRIVER CLASS
  ******************************************************************************/
 
-extern "C" {
-void initicesat2 (void);
-}
+class CumulusIODriver: S3IODriver
+{
+    public:
 
-#endif  /* __icesat2__ */
+        /*--------------------------------------------------------------------
+         * Constants
+         *--------------------------------------------------------------------*/
 
+        static const char* FORMAT;
 
+        /*--------------------------------------------------------------------
+         * Methods
+         *--------------------------------------------------------------------*/
+
+        static Asset::IODriver* create  (const Asset* _asset);
+        void                    ioOpen  (const char* resource);
+
+    private:
+
+        /*--------------------------------------------------------------------
+         * Methods
+         *--------------------------------------------------------------------*/
+
+        CumulusIODriver (const Asset* _asset);
+        ~CumulusIODriver (void);
+};
+
+#endif  /* __cumulus_io_driver__ */

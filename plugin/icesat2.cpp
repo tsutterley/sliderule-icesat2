@@ -114,6 +114,9 @@ void initicesat2 (void)
     Atl03Indexer::init();
     Atl06Dispatch::init();
 
+    /* Register Cumulus IO Driver */
+    Asset::registerDriver(CumulusIODriver::FORMAT, CumulusIODriver::create);
+
     /* Extend Lua */
     LuaEngine::extend(LUA_ICESAT2_LIBNAME, icesat2_open);
 
