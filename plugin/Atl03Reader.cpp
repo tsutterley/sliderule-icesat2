@@ -521,14 +521,36 @@ void* Atl03Reader::atl06Thread (void* parm)
                 for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
                 {
                     /* Find Background */
-                    while(bckgrd_in[t] < bckgrd_rate.gt[t].size - 1)
+                    double background_rate = bckgrd_rate.gt[t][bckgrd_rate.gt[t].size - 1];
+                    while(bckgrd_in[t] < bckgrd_rate.gt[t].size)
                     {
-                        if(bckgrd_delta_time.gt[t][bckgrd_in[t]] >= segment_delta_time.gt[t][extent_segment[t]])
+                        double curr_bckgrd_time = bckgrd_delta_time.gt[t][bckgrd_in[t]];
+                        double segment_time = segment_delta_time.gt[t][extent_segment[t]];
+                        if(curr_bckgrd_time >= segment_time)
                         {
-                            break; // on first index where time exceeds segment time
+                            /* Interpolate Background Rate */
+                            if(bckgrd_in[t] > 0)
+                            {
+                                double prev_bckgrd_time = bckgrd_delta_time.gt[t][bckgrd_in[t] - 1];
+                                double prev_bckgrd_rate = bckgrd_rate.gt[t][bckgrd_in[t] - 1];
+                                double curr_bckgrd_rate = bckgrd_rate.gt[t][bckgrd_in[t]];
+
+                                double bckgrd_run = curr_bckgrd_time - prev_bckgrd_time;
+                                double bckgrd_rise = curr_bckgrd_rate - prev_bckgrd_rate;
+                                double segment_to_bckgrd_delta = segment_time - prev_bckgrd_time;
+
+                                background_rate = ((bckgrd_rise / bckgrd_run) * segment_to_bckgrd_delta) + prev_bckgrd_rate;
+                            }
+                            else
+                            {
+                                /* User First Background Rate (no interpolation) */
+                                background_rate = bckgrd_rate.gt[t][0];
+                            }
+                            break;
                         }
                         else
                         {
+                            /* Go To Next Background Rate */
                             bckgrd_in[t]++;
                         }
                     }
@@ -536,7 +558,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                     /* Populate Attributes */
                     extent->segment_id[t]       = segment_id.gt[t][extent_segment[t]];
                     extent->segment_size[t]     = reader->parms->extent_step;
-                    extent->background_rate[t]  = bckgrd_rate.gt[t][bckgrd_in[t]];
+                    extent->background_rate[t]  = background_rate;
                     extent->gps_time[t]         = sdp_gps_epoch[0] + segment_delta_time.gt[t][extent_segment[t]];
                     extent->latitude[t]         = region.segment_lat.gt[t][extent_segment[t]];
                     extent->longitude[t]        = region.segment_lon.gt[t][extent_segment[t]];

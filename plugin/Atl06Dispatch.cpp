@@ -489,13 +489,14 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             double  window_upper_bound;     // zmax;
             if(iteration == 1)
             {
-                background_count    = background_density; // TODO: not scaled by vertical range of photons???
                 window_lower_bound  = result[t].photons[0].r; // section 5.5, procedure 4c
                 window_upper_bound  = result[t].photons[num_photons - 1].r; // section 5.5, procedure 4c
+                background_count    = background_density * (window_upper_bound - window_lower_bound); // section 5.5, procedure 4b; pe_select_mod.f90 initial_select()
+
             }
             else
             {
-                background_count    = result[t].elevation.window_height * background_density; // section 5.7, procedure 2c
+                background_count    = background_density * result[t].elevation.window_height; // section 5.7, procedure 2c
                 window_lower_bound  = -(result[t].elevation.window_height / 2.0); // section 5.7, procedure 2c
                 window_upper_bound  = result[t].elevation.window_height / 2.0; // section 5.7, procedure 2c
             }
