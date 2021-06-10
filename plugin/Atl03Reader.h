@@ -75,6 +75,7 @@ class Atl03Reader: public LuaObject
             uint16_t        cycle_end;
             uint32_t        segment_id[PAIR_TRACKS_PER_GROUND_TRACK]; // the id of the first ATL03 segment in range; TODO: just need one per extent
             double          segment_size[PAIR_TRACKS_PER_GROUND_TRACK]; // meters; TODO: just need one per extent
+            double          spacecraft_velocity[PAIR_TRACKS_PER_GROUND_TRACK]; // meters per second; TODO: probably just need one per extent
             double          background_rate[PAIR_TRACKS_PER_GROUND_TRACK]; // PE per second
             double          gps_time[PAIR_TRACKS_PER_GROUND_TRACK]; // seconds
             double          latitude[PAIR_TRACKS_PER_GROUND_TRACK];
@@ -165,6 +166,15 @@ class Atl03Reader: public LuaObject
         Publisher*          outQ;
         atl06_parms_t*      parms;
         stats_t             stats;
+
+        H5Api::context_t    context;
+
+        H5Array<double>*    sdp_gps_epoch;
+        H5Array<int8_t>*    sc_orient;
+        H5Array<int32_t>*   start_rgt;
+        H5Array<int32_t>*   end_rgt;
+        H5Array<int32_t>*   start_cycle;
+        H5Array<int32_t>*   end_cycle;
 
         /*--------------------------------------------------------------------
          * Methods

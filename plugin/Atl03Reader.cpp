@@ -33,6 +33,7 @@
  * INCLUDES
  ******************************************************************************/
 
+#include <math.h>
 #include "core.h"
 #include "icesat2.h"
 
@@ -157,32 +158,59 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     numComplete = 0;
     LocalLib::set(readerPid, 0, sizeof(readerPid));
 
-    /* Read ATL03 Data */
-    if(track == ALL_TRACKS)
+    /* Initialize Global Information to Null */
+    sdp_gps_epoch   = NULL;
+    sc_orient       = NULL;
+    start_rgt       = NULL;
+    end_rgt         = NULL;
+    start_cycle     = NULL;
+    end_cycle       = NULL;
+
+    /* Read Global Resource Information */
+    try
     {
-        threadCount = NUM_TRACKS;
-        
-        /* Create Readers */
-        for(int t = 0; t < NUM_TRACKS; t++)
+        sdp_gps_epoch   = new H5Array<double> (asset, resource, "/ancillary_data/atlas_sdp_gps_epoch", &context);
+        sc_orient       = new H5Array<int8_t> (asset, resource, "/orbit_info/sc_orient", &context);
+        start_rgt       = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_rgt", &context);
+        end_rgt         = new H5Array<int32_t>(asset, resource, "/ancillary_data/end_rgt", &context);
+        start_cycle     = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_cycle", &context);
+        end_cycle       = new H5Array<int32_t>(asset, resource, "/ancillary_data/end_cycle", &context);
+
+        /* Read ATL03 Data */
+        if(track == ALL_TRACKS)
         {
+            threadCount = NUM_TRACKS;
+            
+            /* Create Readers */
+            for(int t = 0; t < NUM_TRACKS; t++)
+            {
+                info_t* info = new info_t;
+                info->reader = this;
+                info->asset = asset;
+                info->resource = StringLib::duplicate(resource);
+                info->track = t + 1;
+                readerPid[t] = new Thread(atl06Thread, info);
+            }
+        }
+        else if(track >= 1 && track <= 3)
+        {
+            /* Execute Reader */
+            threadCount = 1;
             info_t* info = new info_t;
             info->reader = this;
             info->asset = asset;
             info->resource = StringLib::duplicate(resource);
-            info->track = t + 1;
-            readerPid[t] = new Thread(atl06Thread, info);
+            info->track = track;
+            atl06Thread(info);
         }
     }
-    else if(track >= 1 && track <= 3)
+    catch(const RunTimeException& e)
     {
-        /* Execute Reader */
-        threadCount = 1;
-        info_t* info = new info_t;
-        info->reader = this;
-        info->asset = asset;
-        info->resource = StringLib::duplicate(resource);
-        info->track = track;
-        atl06Thread(info);
+        mlog(e.level(), "Failed to read global information in resource %s: %s\n", resource, e.what());
+
+        /* Indicate End of Data */
+        outQ->postCopy("", 0);
+        signalComplete();
     }
 }
 
@@ -200,6 +228,13 @@ Atl03Reader::~Atl03Reader (void)
 
     delete outQ;
     delete parms;
+
+    if(sdp_gps_epoch)   delete sdp_gps_epoch;
+    if(sc_orient)       delete sc_orient;
+    if(start_rgt)       delete start_rgt;
+    if(end_rgt)         delete end_rgt;
+    if(start_cycle)     delete start_cycle;
+    if(end_cycle)       delete end_cycle;
 }
 
 /*----------------------------------------------------------------------------
@@ -341,34 +376,24 @@ void* Atl03Reader::atl06Thread (void* parm)
     uint32_t trace_id = start_trace(INFO, reader->traceId, "atl03_reader", "{\"asset\":\"%s\", \"resource\":\"%s\", \"track\":%d}", info->asset->getName(), resource, track);
     EventLib::stashId (trace_id); // set thread specific trace id for H5Api
 
-    /* Create H5 Context */
-    H5Api::context_t* context = new H5Api::context_t;
-
     try
     {
         /* Subset to Region of Interest */
-        Region region(info, context);
+        Region region(info, &reader->context);
 
         /* Read Data from HDF5 File */
-        H5Array<double>     sdp_gps_epoch       (asset, resource, "/ancillary_data/atlas_sdp_gps_epoch", context);
-        H5Array<int8_t>     sc_orient           (asset, resource, "/orbit_info/sc_orient", context);
-        H5Array<int32_t>    start_rgt           (asset, resource, "/ancillary_data/start_rgt", context);
-        H5Array<int32_t>    end_rgt             (asset, resource, "/ancillary_data/end_rgt", context);
-        H5Array<int32_t>    start_cycle         (asset, resource, "/ancillary_data/start_cycle", context);
-        H5Array<int32_t>    end_cycle           (asset, resource, "/ancillary_data/end_cycle", context);
-        GTArray<double>     segment_delta_time  (asset, resource, track, "geolocation/delta_time", context, 0, region.first_segment, region.num_segments);
-        GTArray<int32_t>    segment_id          (asset, resource, track, "geolocation/segment_id", context, 0, region.first_segment, region.num_segments);
-        GTArray<double>     segment_dist_x      (asset, resource, track, "geolocation/segment_dist_x", context, 0, region.first_segment, region.num_segments);
-        GTArray<float>      dist_ph_along       (asset, resource, track, "heights/dist_ph_along", context, 0, region.first_photon, region.num_photons);
-        GTArray<float>      h_ph                (asset, resource, track, "heights/h_ph", context, 0, region.first_photon, region.num_photons);
-        GTArray<char>       signal_conf_ph      (asset, resource, track, "heights/signal_conf_ph", context, reader->parms->surface_type, region.first_photon, region.num_photons);
-        GTArray<double>     bckgrd_delta_time   (asset, resource, track, "bckgrd_atlas/delta_time", context);
-        GTArray<float>      bckgrd_rate         (asset, resource, track, "bckgrd_atlas/bckgrd_rate", context);
+        GTArray<float>      velocity_sc         (asset, resource, track, "geolocation/velocity_sc", &reader->context, H5Api::ALL_COLS, region.first_segment, region.num_segments);
+        GTArray<double>     segment_delta_time  (asset, resource, track, "geolocation/delta_time", &reader->context, 0, region.first_segment, region.num_segments);
+        GTArray<int32_t>    segment_id          (asset, resource, track, "geolocation/segment_id", &reader->context, 0, region.first_segment, region.num_segments);
+        GTArray<double>     segment_dist_x      (asset, resource, track, "geolocation/segment_dist_x", &reader->context, 0, region.first_segment, region.num_segments);
+        GTArray<float>      dist_ph_along       (asset, resource, track, "heights/dist_ph_along", &reader->context, 0, region.first_photon, region.num_photons);
+        GTArray<float>      h_ph                (asset, resource, track, "heights/h_ph", &reader->context, 0, region.first_photon, region.num_photons);
+        GTArray<char>       signal_conf_ph      (asset, resource, track, "heights/signal_conf_ph", &reader->context, reader->parms->surface_type, region.first_photon, region.num_photons);
+        GTArray<double>     bckgrd_delta_time   (asset, resource, track, "bckgrd_atlas/delta_time", &reader->context);
+        GTArray<float>      bckgrd_rate         (asset, resource, track, "bckgrd_atlas/bckgrd_rate", &reader->context);
 
         /* Early Tear Down of Context */
-        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", resource, (unsigned long)context->read_rqsts, (unsigned long)context->bytes_read);
-        delete context;
-        context = NULL;
+        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", resource, (unsigned long)reader->context.read_rqsts, (unsigned long)reader->context.bytes_read);
 
         /* Initialize Dataset Scope Variables */
         int32_t ph_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // photon index
@@ -492,7 +517,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                     }
                 }
 
-                /* Incrment Statistics if Invalid */
+                /* Increment Statistics if Invalid */
                 if(!extent_valid[t])
                 {
                     local_stats.extents_filtered++; 
@@ -510,11 +535,11 @@ void* Atl03Reader::atl06Thread (void* parm)
                 RecordObject* record = new RecordObject(exRecType, extent_size);
                 extent_t* extent = (extent_t*)record->getRecordData();
                 extent->reference_pair_track = track;
-                extent->spacecraft_orientation = sc_orient[0];
-                extent->reference_ground_track_start = start_rgt[0];
-                extent->reference_ground_track_end = end_rgt[0];
-                extent->cycle_start = start_cycle[0];
-                extent->cycle_end = end_cycle[0];
+                extent->spacecraft_orientation = (*reader->sc_orient)[0];
+                extent->reference_ground_track_start = (*reader->start_rgt)[0];
+                extent->reference_ground_track_end = (*reader->end_rgt)[0];
+                extent->cycle_start = (*reader->start_cycle)[0];
+                extent->cycle_end = (*reader->end_cycle)[0];
 
                 /* Populate Extent */
                 uint32_t ph_out = 0;
@@ -555,14 +580,22 @@ void* Atl03Reader::atl06Thread (void* parm)
                         }
                     }
 
+                    /* Calculate Spacecraft Velocity */
+                    int32_t sc_v_offset = extent_segment[t] * 3;
+                    double sc_v1 = velocity_sc.gt[t][sc_v_offset + 0];
+                    double sc_v2 = velocity_sc.gt[t][sc_v_offset + 1];
+                    double sc_v3 = velocity_sc.gt[t][sc_v_offset + 2];
+                    double spacecraft_velocity = sqrt((sc_v1*sc_v1) + (sc_v2*sc_v2) + (sc_v3*sc_v3));
+
                     /* Populate Attributes */
-                    extent->segment_id[t]       = segment_id.gt[t][extent_segment[t]];
-                    extent->segment_size[t]     = reader->parms->extent_step;
-                    extent->background_rate[t]  = background_rate;
-                    extent->gps_time[t]         = sdp_gps_epoch[0] + segment_delta_time.gt[t][extent_segment[t]];
-                    extent->latitude[t]         = region.segment_lat.gt[t][extent_segment[t]];
-                    extent->longitude[t]        = region.segment_lon.gt[t][extent_segment[t]];
-                    extent->photon_count[t]     = extent_photons[t].length();
+                    extent->segment_id[t]           = segment_id.gt[t][extent_segment[t]];
+                    extent->segment_size[t]         = reader->parms->extent_step;
+                    extent->spacecraft_velocity[t]  = spacecraft_velocity;
+                    extent->background_rate[t]      = background_rate;
+                    extent->gps_time[t]             = (*reader->sdp_gps_epoch)[0] + segment_delta_time.gt[t][extent_segment[t]];
+                    extent->latitude[t]             = region.segment_lat.gt[t][extent_segment[t]];
+                    extent->longitude[t]            = region.segment_lon.gt[t][extent_segment[t]];
+                    extent->photon_count[t]         = extent_photons[t].length();
 
                     /* Populate Photons */
                     if(num_photons > 0)
@@ -606,9 +639,6 @@ void* Atl03Reader::atl06Thread (void* parm)
     {
         mlog(e.level(), "Failure during processing of resource %s track %d: %s", resource, track, e.what());
     }
-
-    /* Tear Down Context */
-    if(context) delete context;
 
     /* Handle Global Reader Updates */
     reader->threadMut.lock();

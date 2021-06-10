@@ -61,7 +61,6 @@ class Atl06Dispatch: public DispatchObject
 
         static const double SPEED_OF_LIGHT;
         static const double PULSE_REPITITION_FREQUENCY;
-        static const double SPACECRAFT_GROUND_SPEED;
         static const double RDE_SCALE_FACTOR;
         static const double SIGMA_BEAM;
         static const double SIGMA_XMIT;

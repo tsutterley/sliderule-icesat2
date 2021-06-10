@@ -78,8 +78,7 @@
  ******************************************************************************/
 
 const double Atl06Dispatch::SPEED_OF_LIGHT = 299792458.0; // meters per second
-const double Atl06Dispatch::PULSE_REPITITION_FREQUENCY = .0001; // 10Khz
-const double Atl06Dispatch::SPACECRAFT_GROUND_SPEED = 7000; // meters per second
+const double Atl06Dispatch::PULSE_REPITITION_FREQUENCY = 10000.0; // 10Khz
 const double Atl06Dispatch::RDE_SCALE_FACTOR = 1.3490;
 const double Atl06Dispatch::SIGMA_BEAM = 4.25; // meters
 const double Atl06Dispatch::SIGMA_XMIT = 0.000000068; // seconds
@@ -436,7 +435,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
         int iteration = 0;
 
         /* Initial Per Track Calculations */
-        double pulses_in_segment    = (extent->segment_size[t] * PULSE_REPITITION_FREQUENCY) / SPACECRAFT_GROUND_SPEED; // N_seg_pulses, section 5.4, procedure 1d
+        double pulses_in_segment    = (extent->segment_size[t] * PULSE_REPITITION_FREQUENCY) / extent->spacecraft_velocity[t]; // N_seg_pulses, section 5.4, procedure 1d
         double background_density   = pulses_in_segment * extent->background_rate[t] / (SPEED_OF_LIGHT / 2.0); // BG_density, section 5.7, procedure 1c
 
         /* Iterate Processing of Photons */
