@@ -467,7 +467,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                         if(signal_conf_ph.gt[t][current_photon] >= reader->parms->signal_confidence)
                         {
                             photon_t ph = {
-                                .distance_x = delta_distance + dist_ph_along.gt[t][current_photon] - (reader->parms->extent_step / 2.0),
+                                .distance_x = along_track_distance - (reader->parms->extent_length / 2.0),
                                 .height_y = h_ph.gt[t][current_photon]
                             };
                             extent_photons[t].add(ph);
@@ -589,7 +589,7 @@ void* Atl03Reader::atl06Thread (void* parm)
 
                     /* Populate Attributes */
                     extent->segment_id[t]           = segment_id.gt[t][extent_segment[t]];
-                    extent->segment_size[t]         = reader->parms->extent_step;
+                    extent->segment_size[t]         = reader->parms->extent_length;
                     extent->spacecraft_velocity[t]  = spacecraft_velocity;
                     extent->background_rate[t]      = background_rate;
                     extent->gps_time[t]             = (*reader->sdp_gps_epoch)[0] + segment_delta_time.gt[t][extent_segment[t]];
