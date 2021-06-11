@@ -100,6 +100,7 @@ const char* Atl06Dispatch::elRecType = "atl06rec.elevation"; // extended elevati
 const RecordObject::fieldDef_t Atl06Dispatch::elRecDef[] = {
     {"segment_id",              RecordObject::UINT32,   offsetof(elevation_t, segment_id),          1,  NULL, NATIVE_FLAGS},
     {"n_fit_photons",           RecordObject::INT32,    offsetof(elevation_t, photon_count),        1,  NULL, NATIVE_FLAGS},
+    {"pflags",                  RecordObject::UINT16,   offsetof(elevation_t, pflags),              1,  NULL, NATIVE_FLAGS},
     {"rgt",                     RecordObject::UINT16,   offsetof(elevation_t, rgt),                 1,  NULL, NATIVE_FLAGS},
     {"cycle",                   RecordObject::UINT16,   offsetof(elevation_t, cycle),               1,  NULL, NATIVE_FLAGS},
     {"spot",                    RecordObject::UINT8,    offsetof(elevation_t, spot),                1,  NULL, NATIVE_FLAGS},
@@ -432,6 +433,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
     {
         bool done = false;
+        bool invalid = false;
         int iteration = 0;
 
         /* Initial Per Track Calculations */
@@ -446,7 +448,8 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Check Photon Count */
             if(num_photons < parms->minimum_photon_count)
             {
-                result[t].invalid = true;
+                result[t].elevation.pflags |= PFLAG_TOO_FEW_PHOTONS;
+                invalid = true;
                 done = true;
                 continue;
             }
@@ -461,7 +464,8 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Check Spread */
             if( (fit.x_max - fit.x_min) < parms->along_track_spread )
             {
-                result[t].invalid = true;
+                result[t].elevation.pflags |= PFLAG_SPREAD_TOO_SHORT;
+                invalid = true;
                 done = true;
                 continue;
             }
@@ -469,6 +473,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Check Iterations */
             if(iteration++ > parms->max_iterations)
             {
+                result[t].elevation.pflags |= PFLAG_MAX_ITERATIONS_REACHED;
                 done = true;
                 continue;
             }
@@ -608,7 +613,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
         }
 
         /* Calculate RMS and Scale h_sigma */
-        if(result[t].provided && !result[t].invalid)
+        if(result[t].provided && !invalid)
         {
             result[t].elevation.rms_misfit = sqrt(delta_sum / (double)result[t].elevation.photon_count);
             result[t].elevation.h_sigma = result[t].elevation.rms_misfit * result[t].elevation.h_sigma;

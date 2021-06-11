@@ -67,6 +67,10 @@ class Atl06Dispatch: public DispatchObject
 
         static const int BATCH_SIZE = 256;
 
+        static const uint16_t PFLAG_SPREAD_TOO_SHORT        = 0x0001;   // LUA_PARM_ALONG_TRACK_SPREAD
+        static const uint16_t PFLAG_TOO_FEW_PHOTONS         = 0x0002;   // LUA_PARM_MIN_PHOTON_COUNT
+        static const uint16_t PFLAG_MAX_ITERATIONS_REACHED  = 0x0004;   // LUA_PARM_MAX_ITERATIONS
+
         static const char* elCompactRecType;
         static const RecordObject::fieldDef_t elCompactRecDef[];
 
@@ -110,6 +114,7 @@ class Atl06Dispatch: public DispatchObject
         typedef struct {
             uint32_t            segment_id;
             int32_t             photon_count;           // number of photons used in final elevation calculation
+            uint16_t            pflags;                 // processing flags
             uint16_t            rgt;                    // reference ground track
             uint16_t            cycle;                  // cycle number
             uint8_t             spot;                   // 1 through 6, or 0 if unknown
@@ -159,7 +164,6 @@ class Atl06Dispatch: public DispatchObject
        /* Algorithm Result */
         typedef struct {
             bool        provided;
-            bool        invalid;
             elevation_t elevation;
             point_t*    photons;
         } result_t;
