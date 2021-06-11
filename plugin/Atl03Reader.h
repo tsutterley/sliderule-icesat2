@@ -152,7 +152,6 @@ class Atl03Reader: public LuaObject
          *--------------------------------------------------------------------*/
 
         static const double ATL03_SEGMENT_LENGTH;
-        static const double MAX_ATL06_SEGMENT_LENGTH;
 
         /*--------------------------------------------------------------------
          * Data

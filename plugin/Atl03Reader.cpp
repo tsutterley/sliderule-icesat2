@@ -73,7 +73,6 @@ const RecordObject::fieldDef_t Atl03Reader::exRecDef[] = {
 };
 
 const double Atl03Reader::ATL03_SEGMENT_LENGTH = 20.0; // meters
-const double Atl03Reader::MAX_ATL06_SEGMENT_LENGTH = 40.0; // meters
 
 const char* Atl03Reader::OBJECT_TYPE = "Atl03Reader";
 const char* Atl03Reader::LuaMetaName = "Atl03Reader";
@@ -401,6 +400,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         int32_t seg_ph[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // current photon index in segment
         int32_t start_segment[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 };
         double  start_distance[PAIR_TRACKS_PER_GROUND_TRACK] = { segment_dist_x.gt[PRT_LEFT][0], segment_dist_x.gt[PRT_RIGHT][0] };
+        double  start_seg_portion[PAIR_TRACKS_PER_GROUND_TRACK] = { 0.0, 0.0 };
         bool    track_complete[PAIR_TRACKS_PER_GROUND_TRACK] = { false, false };
         int32_t bckgrd_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // bckgrd index
 
@@ -429,6 +429,7 @@ void* Atl03Reader::atl06Thread (void* parm)
 
                 /* Set Extent Segment */
                 extent_segment[t] = seg_in[t];
+                start_seg_portion[t] = dist_ph_along.gt[t][current_photon] / ATL03_SEGMENT_LENGTH;
 
                 /* Traverse Photons Until Desired Along Track Distance Reached */
                 while( (!extent_complete || !step_complete) &&               // extent or step not complete
@@ -568,7 +569,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                             }
                             else
                             {
-                                /* User First Background Rate (no interpolation) */
+                                /* Use First Background Rate (no interpolation) */
                                 background_rate = bckgrd_rate.gt[t][0];
                             }
                             break;
@@ -587,8 +588,13 @@ void* Atl03Reader::atl06Thread (void* parm)
                     double sc_v3 = velocity_sc.gt[t][sc_v_offset + 2];
                     double spacecraft_velocity = sqrt((sc_v1*sc_v1) + (sc_v2*sc_v2) + (sc_v3*sc_v3));
 
+                    /* Calculate Segment ID (attempt to arrive at closest ATL06 segment ID represented by extent) */
+                    double atl06_segment_id = (double)segment_id.gt[t][extent_segment[t]];              // start with first segment in extent
+                    atl06_segment_id += start_seg_portion[t];                                           // add portion of first segment that first photon is included
+                    atl06_segment_id += (reader->parms->extent_length / ATL03_SEGMENT_LENGTH) / 2.0;    // add half the left of the extent
+
                     /* Populate Attributes */
-                    extent->segment_id[t]           = segment_id.gt[t][extent_segment[t]];
+                    extent->segment_id[t]           = (uint32_t)(atl06_segment_id + 0.5);
                     extent->segment_size[t]         = reader->parms->extent_length;
                     extent->spacecraft_velocity[t]  = spacecraft_velocity;
                     extent->background_rate[t]      = background_rate;
