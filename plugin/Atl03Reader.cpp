@@ -421,6 +421,10 @@ void* Atl03Reader::atl06Thread (void* parm)
             /* Select Photons for Extent from each Track */
             for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
             {
+                /* Skip Completed Tracks */
+                if(track_complete[t]) continue;
+
+                /* Setup Variables for Extent */
                 int32_t current_photon = ph_in[t];
                 int32_t current_segment = seg_in[t];
                 int32_t current_count = seg_ph[t]; // number of photons in current segment already accounted for
@@ -432,20 +436,23 @@ void* Atl03Reader::atl06Thread (void* parm)
                 start_seg_portion[t] = dist_ph_along.gt[t][current_photon] / ATL03_SEGMENT_LENGTH;
 
                 /* Traverse Photons Until Desired Along Track Distance Reached */
-                while( (!extent_complete || !step_complete) &&               // extent or step not complete
-                        (current_segment < segment_dist_x.gt[t].size) &&     // there are more segments
-                        (current_photon < dist_ph_along.gt[t].size) )        // there are more photons
+                while(!extent_complete || !step_complete)
                 {
                     /* Go to Photon's Segment */
                     current_count++;
-                    while(current_count > region.segment_ph_cnt.gt[t][current_segment])
+                    while((current_count > region.segment_ph_cnt.gt[t][current_segment]) &&
+                          (current_segment < segment_dist_x.gt[t].size) )
                     {
                         current_count = 1; // reset photons in segment
                         current_segment++; // go to next segment
-                        if(current_segment >= segment_dist_x.gt[t].size)
-                        {
-                            break;
-                        }
+                    }
+
+                    /* Check Current Segment */
+                    if(current_segment >= segment_dist_x.gt[t].size)
+                    {
+                        mlog(ERROR, "Photons with no segments are detected is %s!\n", resource);
+                        track_complete[t] = true;
+                        break;
                     }
 
                     /* Update Along Track Distance */
@@ -474,13 +481,20 @@ void* Atl03Reader::atl06Thread (void* parm)
                             extent_photons[t].add(ph);
                         }
                     }
-                    else if(!extent_complete)
+                    else
                     {
                         extent_complete = true;
                     }
 
                     /* Go to Next Photon */
                     current_photon++;
+
+                    /* Check Current Photon */
+                    if(current_photon >= dist_ph_along.gt[t].size)
+                    {
+                        track_complete[t] = true;
+                        break;
+                    }
                 }
 
                 /* Add Step to Start Distance */
@@ -493,12 +507,6 @@ void* Atl03Reader::atl06Thread (void* parm)
                     start_distance[t] += segment_dist_x.gt[t][start_segment[t] + 1] - segment_dist_x.gt[t][start_segment[t]];
                     start_distance[t] -= ATL03_SEGMENT_LENGTH;
                     start_segment[t]++;
-                }
-
-                /* Check if Track Complete */
-                if((unsigned)current_photon >= region.num_photons[t])
-                {
-                    track_complete[t] = true;
                 }
 
                 /* Check Photon Count */
@@ -516,12 +524,6 @@ void* Atl03Reader::atl06Thread (void* parm)
                     {
                         extent_valid[t] = false;
                     }
-                }
-
-                /* Increment Statistics if Invalid */
-                if(!extent_valid[t])
-                {
-                    local_stats.extents_filtered++; 
                 }
             }
 
@@ -639,6 +641,11 @@ void* Atl03Reader::atl06Thread (void* parm)
                  */
                 delete record;
             }
+            else // neither pair in extent valid 
+            {
+                local_stats.extents_filtered++; 
+            }
+
         }
     }
     catch(const RunTimeException& e)
