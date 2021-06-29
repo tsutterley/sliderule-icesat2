@@ -73,9 +73,9 @@ class Atl03Reader: public LuaObject
             uint16_t        reference_ground_track_end;
             uint16_t        cycle_start;
             uint16_t        cycle_end;
-            uint32_t        segment_id[PAIR_TRACKS_PER_GROUND_TRACK]; // the id of the first ATL03 segment in range; TODO: just need one per extent
-            double          segment_size[PAIR_TRACKS_PER_GROUND_TRACK]; // meters; TODO: just need one per extent
-            double          spacecraft_velocity[PAIR_TRACKS_PER_GROUND_TRACK]; // meters per second; TODO: probably just need one per extent
+            uint32_t        segment_id[PAIR_TRACKS_PER_GROUND_TRACK];
+            double          segment_size[PAIR_TRACKS_PER_GROUND_TRACK]; // meters
+            double          spacecraft_velocity[PAIR_TRACKS_PER_GROUND_TRACK]; // meters per second
             double          background_rate[PAIR_TRACKS_PER_GROUND_TRACK]; // PE per second
             double          gps_time[PAIR_TRACKS_PER_GROUND_TRACK]; // seconds
             double          latitude[PAIR_TRACKS_PER_GROUND_TRACK];
