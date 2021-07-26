@@ -17,9 +17,9 @@ print('\n------------------\nTest01: Atl03 Indexer \n------------------')
 local filelist = { "ATL03_20181019065445_03150111_003_01.h5",
                    "ATL03_20200304065203_10470605_003_01.h5" }
 
--- load asset 
+-- load asset
 local atl03 = core.getbyname("atlas-local")
-local name, format, url, index_filename, region, endpoint, status = atl03:info()
+local name, format, path, index_filename, region, endpoint, status = atl03:info()
 runner.check(status)
 
 -- setup index file writer
@@ -65,7 +65,7 @@ asset_index_file:close()
 -- check records against index file
 local i = 1
 local raw_index = csv.open(index_filename, {header=true})
-for fields in raw_index:lines() do    
+for fields in raw_index:lines() do
     runner.check(indexlist[i]["name"] == fields["name"])
     runner.check(runner.cmpfloat(indexlist[i]["t0"], fields["t0"], 0.0001))
     runner.check(runner.cmpfloat(indexlist[i]["t1"], fields["t1"], 0.0001))
