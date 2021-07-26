@@ -1,4 +1,4 @@
-asset,          format,     url,                            index,          region,     endpoint
+asset,          format,     path,                           index,          region,     endpoint
 atlas-s3,       s3,         icesat2-sliderule/data/ATLAS,   empty.index,    us-west-2,  https://s3.us-west-2.amazonaws.com
 atl03-s3,       s3,         icesat2-sliderule/data/ATL03,   atl03.index,    us-west-2,  https://s3.us-west-2.amazonaws.com
 atl06-s3,       s3,         icesat2-sliderule/data/ATL06,   empty.index,    local,      local
