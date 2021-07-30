@@ -1,31 +1,31 @@
 /*
  * Copyright (c) 2021, University of Washington
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
- * 1. Redistributions of source code must retain the above copyright notice, 
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- *    this list of conditions and the following disclaimer in the documentation 
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
- * 3. Neither the name of the University of Washington nor the names of its 
- *    contributors may be used to endorse or promote products derived from this 
+ *
+ * 3. Neither the name of the University of Washington nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY OF WASHINGTON AND CONTRIBUTORS
- * “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
+ * “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY OF WASHINGTON OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY OF WASHINGTON OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -53,20 +53,21 @@
 
 const char* Atl03Reader::phRecType = "atl03rec.photons";
 const RecordObject::fieldDef_t Atl03Reader::phRecDef[] = {
-    {"x",           RecordObject::DOUBLE,   offsetof(photon_t, distance_x), 1,  NULL, NATIVE_FLAGS},
-    {"y",           RecordObject::DOUBLE,   offsetof(photon_t, height_y),   1,  NULL, NATIVE_FLAGS}
+    {"distance",    RecordObject::DOUBLE,   offsetof(photon_t, distance_x), 1,  NULL, NATIVE_FLAGS},
+    {"height",      RecordObject::DOUBLE,   offsetof(photon_t, height_y),   1,  NULL, NATIVE_FLAGS},
+    {"latitude",    RecordObject::DOUBLE,   offsetof(photon_t, latitude),   1,  NULL, NATIVE_FLAGS},
+    {"longitude",   RecordObject::DOUBLE,   offsetof(photon_t, longitude),  1,  NULL, NATIVE_FLAGS},
+    {"gps_time",    RecordObject::DOUBLE,   offsetof(photon_t, gps_time),   1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl03Reader::exRecType = "atl03rec";
 const RecordObject::fieldDef_t Atl03Reader::exRecDef[] = {
     {"track",       RecordObject::UINT8,    offsetof(extent_t, reference_pair_track),           1,  NULL, NATIVE_FLAGS},
+    {"sc_orient",   RecordObject::UINT8,    offsetof(extent_t, spacecraft_orientation),         1,  NULL, NATIVE_FLAGS},
     {"rgt",         RecordObject::UINT16,   offsetof(extent_t, reference_ground_track_start),   1,  NULL, NATIVE_FLAGS},
     {"cycle",       RecordObject::UINT16,   offsetof(extent_t, cycle_start),                    1,  NULL, NATIVE_FLAGS},
     {"segment_id",  RecordObject::UINT32,   offsetof(extent_t, segment_id[0]),                  2,  NULL, NATIVE_FLAGS},
-    {"seg_size",    RecordObject::DOUBLE,   offsetof(extent_t, segment_size[0]),                2,  NULL, NATIVE_FLAGS},
-    {"delta_time",  RecordObject::DOUBLE,   offsetof(extent_t, gps_time[0]),                    2,  NULL, NATIVE_FLAGS},
-    {"lat",         RecordObject::DOUBLE,   offsetof(extent_t, latitude[0]),                    2,  NULL, NATIVE_FLAGS},
-    {"lon",         RecordObject::DOUBLE,   offsetof(extent_t, longitude[0]),                   2,  NULL, NATIVE_FLAGS},
+    {"extent_len",  RecordObject::DOUBLE,   offsetof(extent_t, extent_length[0]),               2,  NULL, NATIVE_FLAGS},
     {"count",       RecordObject::UINT32,   offsetof(extent_t, photon_count[0]),                2,  NULL, NATIVE_FLAGS},
     {"photons",     RecordObject::USER,     offsetof(extent_t, photon_offset[0]),               2,  phRecType, NATIVE_FLAGS | RecordObject::POINTER},
     {"data",        RecordObject::USER,     sizeof(extent_t),                                   0,  phRecType, NATIVE_FLAGS} // variable length
@@ -161,9 +162,7 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     sdp_gps_epoch   = NULL;
     sc_orient       = NULL;
     start_rgt       = NULL;
-    end_rgt         = NULL;
     start_cycle     = NULL;
-    end_cycle       = NULL;
 
     /* Read Global Resource Information */
     try
@@ -171,15 +170,13 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
         sdp_gps_epoch   = new H5Array<double> (asset, resource, "/ancillary_data/atlas_sdp_gps_epoch", &context);
         sc_orient       = new H5Array<int8_t> (asset, resource, "/orbit_info/sc_orient", &context);
         start_rgt       = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_rgt", &context);
-        end_rgt         = new H5Array<int32_t>(asset, resource, "/ancillary_data/end_rgt", &context);
         start_cycle     = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_cycle", &context);
-        end_cycle       = new H5Array<int32_t>(asset, resource, "/ancillary_data/end_cycle", &context);
 
         /* Read ATL03 Data */
         if(track == ALL_TRACKS)
         {
             threadCount = NUM_TRACKS;
-            
+
             /* Create Readers */
             for(int t = 0; t < NUM_TRACKS; t++)
             {
@@ -231,9 +228,7 @@ Atl03Reader::~Atl03Reader (void)
     if(sdp_gps_epoch)   delete sdp_gps_epoch;
     if(sc_orient)       delete sc_orient;
     if(start_rgt)       delete start_rgt;
-    if(end_rgt)         delete end_rgt;
     if(start_cycle)     delete start_cycle;
-    if(end_cycle)       delete end_cycle;
 }
 
 /*----------------------------------------------------------------------------
@@ -275,7 +270,7 @@ Atl03Reader::Region::Region (info_t* info, H5Api::context_t* context):
         for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
         {
             int segment = 0;
-            while(segment < segment_ph_cnt.gt[t].size)           
+            while(segment < segment_ph_cnt.gt[t].size)
             {
                 bool inclusion = false;
 
@@ -388,6 +383,9 @@ void* Atl03Reader::atl06Thread (void* parm)
         GTArray<float>      dist_ph_along       (asset, resource, track, "heights/dist_ph_along", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<float>      h_ph                (asset, resource, track, "heights/h_ph", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<char>       signal_conf_ph      (asset, resource, track, "heights/signal_conf_ph", &reader->context, reader->parms->surface_type, region.first_photon, region.num_photons);
+        GTArray<double>     lat_ph              (asset, resource, track, "heights/lat_ph", &reader->context, 0, region.first_photon, region.num_photons);
+        GTArray<double>     lon_ph              (asset, resource, track, "heights/lon_ph", &reader->context, 0, region.first_photon, region.num_photons);
+        GTArray<double>     delta_time          (asset, resource, track, "heights/delta_time", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<double>     bckgrd_delta_time   (asset, resource, track, "bckgrd_atlas/delta_time", &reader->context);
         GTArray<float>      bckgrd_rate         (asset, resource, track, "bckgrd_atlas/bckgrd_rate", &reader->context);
 
@@ -404,7 +402,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         bool    track_complete[PAIR_TRACKS_PER_GROUND_TRACK] = { false, false };
         int32_t bckgrd_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // bckgrd index
 
-        /* Set Number of Photons to Process (if not already set by subsetter) */    
+        /* Set Number of Photons to Process (if not already set by subsetter) */
         if(region.num_photons[PRT_LEFT] == H5Api::ALL_ROWS) region.num_photons[PRT_LEFT] = dist_ph_along.gt[PRT_LEFT].size;
         if(region.num_photons[PRT_RIGHT] == H5Api::ALL_ROWS) region.num_photons[PRT_RIGHT] = dist_ph_along.gt[PRT_RIGHT].size;
 
@@ -476,7 +474,10 @@ void* Atl03Reader::atl06Thread (void* parm)
                         {
                             photon_t ph = {
                                 .distance_x = along_track_distance - (reader->parms->extent_length / 2.0),
-                                .height_y = h_ph.gt[t][current_photon]
+                                .height_y = h_ph.gt[t][current_photon],
+                                .latitude = lat_ph.gt[t][current_photon],
+                                .longitude = lon_ph.gt[t][current_photon],
+                                .gps_time = (*reader->sdp_gps_epoch)[0] + delta_time.gt[t][current_photon]
                             };
                             extent_photons[t].add(ph);
                         }
@@ -532,17 +533,15 @@ void* Atl03Reader::atl06Thread (void* parm)
             {
                 /* Calculate Extent Record Size */
                 int num_photons = extent_photons[PRT_LEFT].length() + extent_photons[PRT_RIGHT].length();
-                int extent_size = sizeof(extent_t) + (sizeof(photon_t) * num_photons);
+                int extent_bytes = sizeof(extent_t) + (sizeof(photon_t) * num_photons);
 
                 /* Allocate and Initialize Extent Record */
-                RecordObject* record = new RecordObject(exRecType, extent_size);
+                RecordObject* record = new RecordObject(exRecType, extent_bytes);
                 extent_t* extent = (extent_t*)record->getRecordData();
                 extent->reference_pair_track = track;
                 extent->spacecraft_orientation = (*reader->sc_orient)[0];
                 extent->reference_ground_track_start = (*reader->start_rgt)[0];
-                extent->reference_ground_track_end = (*reader->end_rgt)[0];
                 extent->cycle_start = (*reader->start_cycle)[0];
-                extent->cycle_end = (*reader->end_cycle)[0];
 
                 /* Populate Extent */
                 uint32_t ph_out = 0;
@@ -597,12 +596,9 @@ void* Atl03Reader::atl06Thread (void* parm)
 
                     /* Populate Attributes */
                     extent->segment_id[t]           = (uint32_t)(atl06_segment_id + 0.5);
-                    extent->segment_size[t]         = reader->parms->extent_length;
+                    extent->extent_length[t]        = reader->parms->extent_length;
                     extent->spacecraft_velocity[t]  = spacecraft_velocity;
                     extent->background_rate[t]      = background_rate;
-                    extent->gps_time[t]             = (*reader->sdp_gps_epoch)[0] + segment_delta_time.gt[t][extent_segment[t]];
-                    extent->latitude[t]             = region.segment_lat.gt[t][extent_segment[t]];
-                    extent->longitude[t]            = region.segment_lon.gt[t][extent_segment[t]];
                     extent->photon_count[t]         = extent_photons[t].length();
 
                     /* Populate Photons */
@@ -625,7 +621,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 int post_status = MsgQ::STATE_ERROR;
                 while(reader->active && (post_status = reader->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) <= 0)
                 {
-                    local_stats.extents_retried++; 
+                    local_stats.extents_retried++;
                     mlog(DEBUG, "Atl03 reader failed to post to stream %s: %d", reader->outQ->getName(), post_status);
                 }
 
@@ -633,17 +629,17 @@ void* Atl03Reader::atl06Thread (void* parm)
                 if(post_status > 0) local_stats.extents_sent++;
                 else                local_stats.extents_dropped++;
 
-                /* 
-                 * Clean Up Record 
+                /*
+                 * Clean Up Record
                  *  It should be safe to delete here because there should be no
                  *  way an exception is thrown between the code that allocates the record
                  *  and the code below that deletes it.
                  */
                 delete record;
             }
-            else // neither pair in extent valid 
+            else // neither pair in extent valid
             {
-                local_stats.extents_filtered++; 
+                local_stats.extents_filtered++;
             }
 
         }
@@ -655,7 +651,7 @@ void* Atl03Reader::atl06Thread (void* parm)
 
     /* Handle Global Reader Updates */
     reader->threadMut.lock();
-    {        
+    {
         /* Update Statistics */
         reader->stats.segments_read += local_stats.segments_read;
         reader->stats.extents_filtered += local_stats.extents_filtered;
@@ -668,7 +664,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         if(reader->numComplete == reader->threadCount)
         {
             mlog(CRITICAL, "Completed processing resource %s", resource);
-    
+
             /* Indicate End of Data */
             reader->outQ->postCopy("", 0);
             reader->signalComplete();
