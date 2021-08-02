@@ -611,27 +611,27 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
         }
 
         /* Calculate RMS and Scale h_sigma */
-        if(result[t].provided && !invalid)
+        if(result[t].provided)
         {
             int32_t num_photons = result[t].elevation.photon_count;
 
-            /* Calculate RMS and Scale h_sigma */
-            result[t].elevation.rms_misfit = sqrt(delta_sum / (double)num_photons);
-            result[t].elevation.h_sigma = result[t].elevation.rms_misfit * result[t].elevation.h_sigma;
+            if(!invalid)
+            {
+                /* Calculate RMS and Scale h_sigma */
+                result[t].elevation.rms_misfit = sqrt(delta_sum / (double)num_photons);
+                result[t].elevation.h_sigma = result[t].elevation.rms_misfit * result[t].elevation.h_sigma;
+            }
+            else
+            {
+                result[t].elevation.rms_misfit = 0.0;
+                result[t].elevation.h_sigma = 0.0;
+            }
 
             /* Calculate Latitude, Longitude, and GPS Time using Least Squares Fit */
             lsf_t fit = lsf(extent, result[t].photons, num_photons, true);
             result[t].elevation.latitude = fit.latitude;
             result[t].elevation.longitude = fit.longitude;
             result[t].elevation.delta_time = fit.delta_time;
-        }
-        else
-        {
-            result[t].elevation.rms_misfit = 0.0;
-            result[t].elevation.h_sigma = 0.0;
-            result[t].elevation.latitude = 0.0;
-            result[t].elevation.longitude = 0.0;
-            result[t].elevation.delta_time = 0.0;
         }
     }
 }
