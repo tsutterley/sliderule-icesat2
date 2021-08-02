@@ -65,7 +65,7 @@ class Atl03Reader: public LuaObject
             double          height_y;   // double[]: h_ph
             double          latitude;
             double          longitude;
-            double          gps_time;   // seconds since GPS epoch
+            double          delta_time; // seconds since ATLAS SDP epoch
         } photon_t;
 
         /* Extent Record */
@@ -166,7 +166,6 @@ class Atl03Reader: public LuaObject
 
         H5Api::context_t    context;
 
-        H5Array<double>*    sdp_gps_epoch;
         H5Array<int8_t>*    sc_orient;
         H5Array<int32_t>*   start_rgt;
         H5Array<int32_t>*   start_cycle;

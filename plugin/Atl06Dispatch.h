@@ -99,7 +99,7 @@ class Atl06Dispatch: public DispatchObject
 
         /* Elevation Measurement */
         typedef struct {
-            double              gps_time;               // seconds from GPS epoch
+            double              delta_time;             // seconds from ATLAS SDP epoch
             double              latitude;
             double              longitude;
             double              h_mean;                 // meters from ellipsoid
@@ -118,7 +118,7 @@ class Atl06Dispatch: public DispatchObject
             uint16_t            rgt;                    // reference ground track
             uint16_t            cycle;                  // cycle number
             uint8_t             spot;                   // 1 through 6, or 0 if unknown
-            double              gps_time;               // seconds from GPS epoch
+            double              delta_time;             // seconds from ATLAS SDP epoch
             double              latitude;
             double              longitude;
             double              h_mean;                 // meters from ellipsoid
@@ -155,7 +155,7 @@ class Atl06Dispatch: public DispatchObject
             double      y_sigma;
             double      latitude;
             double      longitude;
-            double      gps_time;
+            double      delta_time;
         } lsf_t;
 
         typedef struct {

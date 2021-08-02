@@ -57,7 +57,7 @@ const RecordObject::fieldDef_t Atl03Reader::phRecDef[] = {
     {"height",      RecordObject::DOUBLE,   offsetof(photon_t, height_y),   1,  NULL, NATIVE_FLAGS},
     {"latitude",    RecordObject::DOUBLE,   offsetof(photon_t, latitude),   1,  NULL, NATIVE_FLAGS},
     {"longitude",   RecordObject::DOUBLE,   offsetof(photon_t, longitude),  1,  NULL, NATIVE_FLAGS},
-    {"gps_time",    RecordObject::DOUBLE,   offsetof(photon_t, gps_time),   1,  NULL, NATIVE_FLAGS}
+    {"delta_time",  RecordObject::DOUBLE,   offsetof(photon_t, delta_time), 1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl03Reader::exRecType = "atl03rec";
@@ -159,7 +159,6 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     LocalLib::set(readerPid, 0, sizeof(readerPid));
 
     /* Initialize Global Information to Null */
-    sdp_gps_epoch   = NULL;
     sc_orient       = NULL;
     start_rgt       = NULL;
     start_cycle     = NULL;
@@ -167,7 +166,6 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     /* Read Global Resource Information */
     try
     {
-        sdp_gps_epoch   = new H5Array<double> (asset, resource, "/ancillary_data/atlas_sdp_gps_epoch", &context);
         sc_orient       = new H5Array<int8_t> (asset, resource, "/orbit_info/sc_orient", &context);
         start_rgt       = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_rgt", &context);
         start_cycle     = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_cycle", &context);
@@ -225,7 +223,6 @@ Atl03Reader::~Atl03Reader (void)
     delete outQ;
     delete parms;
 
-    if(sdp_gps_epoch)   delete sdp_gps_epoch;
     if(sc_orient)       delete sc_orient;
     if(start_rgt)       delete start_rgt;
     if(start_cycle)     delete start_cycle;
@@ -477,7 +474,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                                 .height_y = h_ph.gt[t][current_photon],
                                 .latitude = lat_ph.gt[t][current_photon],
                                 .longitude = lon_ph.gt[t][current_photon],
-                                .gps_time = (*reader->sdp_gps_epoch)[0] + delta_time.gt[t][current_photon]
+                                .delta_time = delta_time.gt[t][current_photon]
                             };
                             extent_photons[t].add(ph);
                         }

@@ -85,7 +85,7 @@ const double Atl06Dispatch::SIGMA_XMIT = 0.000000068; // seconds
 
 const char* Atl06Dispatch::elCompactRecType = "atl06rec-compact.elevation"; // elevation measurement record
 const RecordObject::fieldDef_t Atl06Dispatch::elCompactRecDef[] = {
-    {"gps_time",                RecordObject::DOUBLE,   offsetof(elevation_compact_t, gps_time),    1,  NULL, NATIVE_FLAGS},
+    {"delta_time",              RecordObject::DOUBLE,   offsetof(elevation_compact_t, delta_time),  1,  NULL, NATIVE_FLAGS},
     {"lat",                     RecordObject::DOUBLE,   offsetof(elevation_compact_t, latitude),    1,  NULL, NATIVE_FLAGS},
     {"lon",                     RecordObject::DOUBLE,   offsetof(elevation_compact_t, longitude),   1,  NULL, NATIVE_FLAGS},
     {"h_mean",                  RecordObject::DOUBLE,   offsetof(elevation_compact_t, h_mean),      1,  NULL, NATIVE_FLAGS}
@@ -104,7 +104,7 @@ const RecordObject::fieldDef_t Atl06Dispatch::elRecDef[] = {
     {"rgt",                     RecordObject::UINT16,   offsetof(elevation_t, rgt),                 1,  NULL, NATIVE_FLAGS},
     {"cycle",                   RecordObject::UINT16,   offsetof(elevation_t, cycle),               1,  NULL, NATIVE_FLAGS},
     {"spot",                    RecordObject::UINT8,    offsetof(elevation_t, spot),                1,  NULL, NATIVE_FLAGS},
-    {"gps_time",                RecordObject::DOUBLE,   offsetof(elevation_t, gps_time),            1,  NULL, NATIVE_FLAGS},
+    {"delta_time",              RecordObject::DOUBLE,   offsetof(elevation_t, delta_time),          1,  NULL, NATIVE_FLAGS},
     {"lat",                     RecordObject::DOUBLE,   offsetof(elevation_t, latitude),            1,  NULL, NATIVE_FLAGS},
     {"lon",                     RecordObject::DOUBLE,   offsetof(elevation_t, longitude),           1,  NULL, NATIVE_FLAGS},
     {"h_mean",                  RecordObject::DOUBLE,   offsetof(elevation_t, h_mean),              1,  NULL, NATIVE_FLAGS},
@@ -373,7 +373,7 @@ void Atl06Dispatch::postResult (elevation_t* elevation)
             }
             else
             {
-                recCompactData->elevation[elevationIndex].gps_time = elevation->gps_time;
+                recCompactData->elevation[elevationIndex].delta_time = elevation->delta_time;
                 recCompactData->elevation[elevationIndex].latitude = elevation->latitude;
                 recCompactData->elevation[elevationIndex].longitude = elevation->longitude;
                 recCompactData->elevation[elevationIndex].h_mean = elevation->h_mean;
@@ -623,7 +623,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             lsf_t fit = lsf(extent, result[t].photons, num_photons, true);
             result[t].elevation.latitude = fit.latitude;
             result[t].elevation.longitude = fit.longitude;
-            result[t].elevation.gps_time = fit.gps_time;
+            result[t].elevation.delta_time = fit.delta_time;
         }
         else
         {
@@ -631,7 +631,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             result[t].elevation.h_sigma = 0.0;
             result[t].elevation.latitude = 0.0;
             result[t].elevation.longitude = 0.0;
-            result[t].elevation.gps_time = 0.0;
+            result[t].elevation.delta_time = 0.0;
         }
     }
 }
@@ -763,7 +763,7 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
     {
         fit.latitude = 0.0;
         fit.longitude = 0.0;
-        fit.gps_time = 0.0;
+        fit.delta_time = 0.0;
 
         /* Calculate G^-g and m */
         for(int p = 0; p < size; p++)
@@ -772,7 +772,7 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
             double x = ph->distance_x;
             double lat_y = ph->latitude;
             double lon_y = ph->longitude;
-            double gps_y = ph->gps_time;
+            double gps_y = ph->delta_time;
 
             /* Perform Matrix Operation */
             double gig_1 = igtg_11 + (igtg_12_21 * x);   // G^-g row 1 element
@@ -781,7 +781,7 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
             /* Calculate m */
             fit.latitude += gig_1 * lat_y;
             fit.longitude += gig_1 * lon_y;
-            fit.gps_time += gig_1 * gps_y;
+            fit.delta_time += gig_1 * gps_y;
         }
     }
 
