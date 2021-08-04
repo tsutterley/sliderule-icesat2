@@ -118,6 +118,7 @@ class Atl06Dispatch: public DispatchObject
             uint16_t            rgt;                    // reference ground track
             uint16_t            cycle;                  // cycle number
             uint8_t             spot;                   // 1 through 6, or 0 if unknown
+            uint8_t             gt;                     // gt1l, gt1r, gt2l, gt2r, gt3l, gt3r
             double              delta_time;             // seconds from ATLAS SDP epoch
             double              latitude;
             double              longitude;
@@ -150,8 +151,6 @@ class Atl06Dispatch: public DispatchObject
         typedef struct {
             double      height;
             double      slope;
-            double      x_min;
-            double      x_max;
             double      y_sigma;
             double      latitude;
             double      longitude;

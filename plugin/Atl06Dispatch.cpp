@@ -104,6 +104,7 @@ const RecordObject::fieldDef_t Atl06Dispatch::elRecDef[] = {
     {"rgt",                     RecordObject::UINT16,   offsetof(elevation_t, rgt),                 1,  NULL, NATIVE_FLAGS},
     {"cycle",                   RecordObject::UINT16,   offsetof(elevation_t, cycle),               1,  NULL, NATIVE_FLAGS},
     {"spot",                    RecordObject::UINT8,    offsetof(elevation_t, spot),                1,  NULL, NATIVE_FLAGS},
+    {"gt",                      RecordObject::UINT8,    offsetof(elevation_t, gt),                  1,  NULL, NATIVE_FLAGS},
     {"delta_time",              RecordObject::DOUBLE,   offsetof(elevation_t, delta_time),          1,  NULL, NATIVE_FLAGS},
     {"lat",                     RecordObject::DOUBLE,   offsetof(elevation_t, latitude),            1,  NULL, NATIVE_FLAGS},
     {"lon",                     RecordObject::DOUBLE,   offsetof(elevation_t, longitude),           1,  NULL, NATIVE_FLAGS},
@@ -324,16 +325,22 @@ void Atl06Dispatch::calculateBeam (sc_orient_t sc_orient, track_t track, result_
         {
             result[PRT_LEFT].elevation.spot = SPOT_5;
             result[PRT_RIGHT].elevation.spot = SPOT_6;
+            result[PRT_LEFT].elevation.gt = (uint8_t)GT1L;
+            result[PRT_RIGHT].elevation.gt = (uint8_t)GT1R;
         }
         else if(track == RPT_2)
         {
             result[PRT_LEFT].elevation.spot = SPOT_3;
             result[PRT_RIGHT].elevation.spot = SPOT_4;
+            result[PRT_LEFT].elevation.gt = (uint8_t)GT2L;
+            result[PRT_RIGHT].elevation.gt = (uint8_t)GT2R;
         }
         else if(track == RPT_3)
         {
             result[PRT_LEFT].elevation.spot = SPOT_1;
             result[PRT_RIGHT].elevation.spot = SPOT_2;
+            result[PRT_LEFT].elevation.gt = (uint8_t)GT3L;
+            result[PRT_RIGHT].elevation.gt = (uint8_t)GT3R;
         }
     }
     else if(sc_orient == SC_FORWARD)
@@ -342,16 +349,22 @@ void Atl06Dispatch::calculateBeam (sc_orient_t sc_orient, track_t track, result_
         {
             result[PRT_LEFT].elevation.spot = SPOT_2;
             result[PRT_RIGHT].elevation.spot = SPOT_1;
+            result[PRT_LEFT].elevation.gt = (uint8_t)GT1L;
+            result[PRT_RIGHT].elevation.gt = (uint8_t)GT1R;
         }
         else if(track == RPT_2)
         {
             result[PRT_LEFT].elevation.spot = SPOT_4;
             result[PRT_RIGHT].elevation.spot = SPOT_3;
+            result[PRT_LEFT].elevation.gt = (uint8_t)GT2L;
+            result[PRT_RIGHT].elevation.gt = (uint8_t)GT2R;
         }
         else if(track == RPT_3)
         {
             result[PRT_LEFT].elevation.spot = SPOT_6;
             result[PRT_RIGHT].elevation.spot = SPOT_5;
+            result[PRT_LEFT].elevation.gt = (uint8_t)GT3L;
+            result[PRT_RIGHT].elevation.gt = (uint8_t)GT3R;
         }
     }
 }
@@ -428,6 +441,21 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
     /* Process Tracks */
     for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
     {
+        /* Check Valid Extent */
+        if(extent->valid[t] && result[t].elevation.photon_count > 0)
+        {
+            result[t].provided = true;
+        }
+        else
+        {
+            // the check for photon count is redundent with the check for
+            // a valid extent, but given that the code below is invalid
+            // if the number of photons is less than or equal to zero,
+            // the check is provided explicitly
+            continue;
+        }
+
+        /* Initial Conditions */
         bool done = false;
         bool invalid = false;
         int iteration = 0;
@@ -441,38 +469,11 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
         {
             int num_photons = result[t].elevation.photon_count;
 
-            /* Check Photon Count */
-            if(num_photons < parms->minimum_photon_count)
-            {
-                result[t].elevation.pflags |= PFLAG_TOO_FEW_PHOTONS;
-                invalid = true;
-                done = true;
-                continue;
-            }
-
             /* Calculate Least Squares Fit */
             lsf_t fit = lsf(extent, result[t].photons, num_photons, false);
             result[t].elevation.h_mean = fit.height;
             result[t].elevation.along_track_slope = fit.slope;
             result[t].elevation.h_sigma = fit.y_sigma; // scaled by rms below
-            result[t].provided = true;
-
-            /* Check Spread */
-            if( (fit.x_max - fit.x_min) < parms->along_track_spread )
-            {
-                result[t].elevation.pflags |= PFLAG_SPREAD_TOO_SHORT;
-                invalid = true;
-                done = true;
-                continue;
-            }
-
-            /* Check Iterations */
-            if(iteration++ > parms->max_iterations)
-            {
-                result[t].elevation.pflags |= PFLAG_MAX_ITERATIONS_REACHED;
-                done = true;
-                continue;
-            }
 
             /* Calculate Residuals */
             for(int p = 0; p < num_photons; p++)
@@ -489,12 +490,11 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             double  background_count;       // N_BG
             double  window_lower_bound;     // zmin
             double  window_upper_bound;     // zmax;
-            if(iteration == 1)
+            if(iteration == 0)
             {
                 window_lower_bound  = result[t].photons[0].r; // section 5.5, procedure 4c
                 window_upper_bound  = result[t].photons[num_photons - 1].r; // section 5.5, procedure 4c
                 background_count    = background_density * (window_upper_bound - window_lower_bound); // section 5.5, procedure 4b; pe_select_mod.f90 initial_select()
-
             }
             else
             {
@@ -571,30 +571,58 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             result[t].elevation.window_height = MAX(new_window_height, 0.75 * result[t].elevation.window_height); // section 5.7, procedure 2e
             double window_spread = result[t].elevation.window_height / 2.0;
 
-            /* Filtered Out Photons in Results (section 5.5, procedure 4f) */
-            int32_t ph_in = 0;
+            /* Precalculate Next Iteration's Conditions (section 5.7, procedure 2h) */
+            int32_t next_num_photons = 0;
+            double x_min = DBL_MAX;
+            double x_max = DBL_MIN;
             for(int p = 0; p < num_photons; p++)
             {
                 if(abs(result[t].photons[p].r) < window_spread)
                 {
-                    result[t].photons[ph_in++] = result[t].photons[p];
+                    next_num_photons++;
+                    double x = extent->photons[result[t].photons[p].p].distance_x;
+                    if(x < x_min) x_min = x;
+                    if(x > x_max) x_max = x;
                 }
             }
 
-            /*
-             * TODO: section 5.7, procedure 2h
-             * undo the window_height and selected PE
-             * if along_track_spread and minimum_photon_count not reached
-             */
-
-            /* Set New Number of Photons */
-            if(ph_in != result[t].elevation.photon_count)
+            /* Check Photon Count */
+            if(next_num_photons < parms->minimum_photon_count)
             {
-                result[t].elevation.photon_count = ph_in; // from filtering above
+                result[t].elevation.pflags |= PFLAG_TOO_FEW_PHOTONS;
+                invalid = true;
+                done = true;
             }
-            else // no change in photons
+            /* Check Spread */
+            else if((x_max - x_min) < parms->along_track_spread)
+            {
+                result[t].elevation.pflags |= PFLAG_SPREAD_TOO_SHORT;
+                invalid = true;
+                done = true;
+            }
+            /* Check Change in Number of Photons */
+            else if(next_num_photons == num_photons)
             {
                 done = true;
+            }
+            /* Check Iterations */
+            else if(++iteration >= parms->max_iterations)
+            {
+                result[t].elevation.pflags |= PFLAG_MAX_ITERATIONS_REACHED;
+                done = true;
+            }
+            /* Filtered Out Photons in Results and Iterate Again (section 5.5, procedure 4f) */
+            else
+            {
+                int32_t ph_in = 0;
+                for(int p = 0; p < num_photons; p++)
+                {
+                    if(abs(result[t].photons[p].r) < window_spread)
+                    {
+                        result[t].photons[ph_in++] = result[t].photons[p];
+                    }
+                }
+                result[t].elevation.photon_count = ph_in;
             }
         }
 
@@ -611,28 +639,22 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
         }
 
         /* Calculate RMS and Scale h_sigma */
-        if(result[t].provided)
+        if(!invalid && result[t].elevation.photon_count > 0)
         {
-            int32_t num_photons = result[t].elevation.photon_count;
-
-            if(!invalid)
-            {
-                /* Calculate RMS and Scale h_sigma */
-                result[t].elevation.rms_misfit = sqrt(delta_sum / (double)num_photons);
-                result[t].elevation.h_sigma = result[t].elevation.rms_misfit * result[t].elevation.h_sigma;
-            }
-            else
-            {
-                result[t].elevation.rms_misfit = 0.0;
-                result[t].elevation.h_sigma = 0.0;
-            }
-
-            /* Calculate Latitude, Longitude, and GPS Time using Least Squares Fit */
-            lsf_t fit = lsf(extent, result[t].photons, num_photons, true);
-            result[t].elevation.latitude = fit.latitude;
-            result[t].elevation.longitude = fit.longitude;
-            result[t].elevation.delta_time = fit.delta_time;
+            result[t].elevation.rms_misfit = sqrt(delta_sum / (double)result[t].elevation.photon_count);
+            result[t].elevation.h_sigma = result[t].elevation.rms_misfit * result[t].elevation.h_sigma;
         }
+        else
+        {
+            result[t].elevation.rms_misfit = 0.0;
+            result[t].elevation.h_sigma = 0.0;
+        }
+
+        /* Calculate Latitude, Longitude, and GPS Time using Least Squares Fit */
+        lsf_t fit = lsf(extent, result[t].photons, result[t].elevation.photon_count, true);
+        result[t].elevation.latitude = fit.latitude;
+        result[t].elevation.longitude = fit.longitude;
+        result[t].elevation.delta_time = fit.delta_time;
     }
 }
 
@@ -708,8 +730,6 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
     /* Initialize Fit */
     fit.height = 0.0;
     fit.slope = 0.0;
-    fit.x_min = DBL_MAX;
-    fit.x_max = DBL_MIN;
     fit.y_sigma = 0.0;
 
     /* Calculate G^T*G and GT*h*/
@@ -723,10 +743,6 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
         /* Perform Matrix Operation */
         gtg_12_21 += x;
         gtg_22 += x * x;
-
-        /* Get Min's and Max's */
-        if(x < fit.x_min)  fit.x_min = x;
-        if(x > fit.x_max)  fit.x_max = x;
     }
 
     /* Calculate (G^T*G)^-1 */

@@ -417,7 +417,11 @@ void* Atl03Reader::atl06Thread (void* parm)
             for(int t = 0; t < PAIR_TRACKS_PER_GROUND_TRACK; t++)
             {
                 /* Skip Completed Tracks */
-                if(track_complete[t]) continue;
+                if(track_complete[t])
+                {
+                    extent_valid[t] = false;
+                    continue;
+                }
 
                 /* Setup Variables for Extent */
                 int32_t current_photon = ph_in[t];
@@ -592,6 +596,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                     atl06_segment_id += (reader->parms->extent_length / ATL03_SEGMENT_LENGTH) / 2.0;    // add half the left of the extent
 
                     /* Populate Attributes */
+                    extent->valid[t]                = extent_valid[t];
                     extent->segment_id[t]           = (uint32_t)(atl06_segment_id + 0.5);
                     extent->extent_length[t]        = reader->parms->extent_length;
                     extent->spacecraft_velocity[t]  = spacecraft_velocity;
