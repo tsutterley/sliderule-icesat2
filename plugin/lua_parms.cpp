@@ -79,6 +79,9 @@ const atl06_parms_t DefaultParms = {
 
 static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
+    /* Reset Provided */
+    *provided = false;
+
     /* Must be table of classifications */
     if(lua_istable(L, index))
     {
@@ -146,6 +149,9 @@ static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, 
 
 static void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
+    /* Reset Provided */
+    *provided = false;
+
     /* Must be table of coordinates */
     if(lua_istable(L, index))
     {
@@ -188,6 +194,9 @@ static void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool
 
 static void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
+    /* Reset Provided */
+    *provided = false;
+
     /* Must be table of stages */
     if(lua_istable(L, index))
     {
@@ -257,7 +266,7 @@ atl06_parms_t* getLuaAtl06Parms (lua_State* L, int index)
 
             lua_getfield(L, index, LUA_PARM_ATL08_CLASS);
             get_lua_atl08_class(L, -1, parms, &provided);
-            if(provided) parms->use_atl08_classification = true;
+            if(provided) { printf("PROVIDED\n\n"); parms->use_atl08_classification = true;}
             lua_pop(L, 1);
 
             lua_getfield(L, index, LUA_PARM_POLYGON);

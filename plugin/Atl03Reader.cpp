@@ -365,6 +365,11 @@ void* Atl03Reader::atl06Thread (void* parm)
     int track = info->track;
     stats_t local_stats = {0, 0, 0, 0, 0};
 
+    /* ATL08 Variables (dynamically allocated) */
+    GTArray<int32_t>* atl08_ph_segment_id   = NULL;
+    GTArray<int32_t>* atl08_classed_pc_indx = NULL;
+    GTArray<int8_t>*  atl08_classed_pc_flag = NULL;
+
     /* Start Trace */
     uint32_t trace_id = start_trace(INFO, reader->traceId, "atl03_reader", "{\"asset\":\"%s\", \"resource\":\"%s\", \"track\":%d}", info->asset->getName(), resource, track);
     EventLib::stashId (trace_id); // set thread specific trace id for H5Api
@@ -389,9 +394,6 @@ void* Atl03Reader::atl06Thread (void* parm)
         GTArray<float>      bckgrd_rate         (asset, resource, track, "bckgrd_atlas/bckgrd_rate", &reader->context);
 
         /* Read ATL08 Data from HDF5 File */
-        GTArray<int32_t>* atl08_ph_segment_id   = NULL;
-        GTArray<int32_t>* atl08_classed_pc_indx = NULL;
-        GTArray<int8_t>*  atl08_classed_pc_flag = NULL;
         if(reader->parms->use_atl08_classification)
         {
             atl08_ph_segment_id     = new GTArray<int32_t>(asset, resource, track, "signal_photons/ph_segment_id", &reader->context);
@@ -728,6 +730,11 @@ void* Atl03Reader::atl06Thread (void* parm)
         }
     }
     reader->threadMut.unlock();
+
+    /* Clean Up ATL08 Variables */
+    if(atl08_ph_segment_id) delete atl08_ph_segment_id;
+    if(atl08_classed_pc_indx) delete atl08_classed_pc_indx;
+    if(atl08_classed_pc_flag) delete atl08_classed_pc_flag;
 
     /* Clean Up Info */
     delete [] info->resource;
