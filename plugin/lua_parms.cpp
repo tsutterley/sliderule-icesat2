@@ -1,31 +1,31 @@
 /*
  * Copyright (c) 2021, University of Washington
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
- * 1. Redistributions of source code must retain the above copyright notice, 
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- *    this list of conditions and the following disclaimer in the documentation 
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
- * 3. Neither the name of the University of Washington nor the names of its 
- *    contributors may be used to endorse or promote products derived from this 
+ *
+ * 3. Neither the name of the University of Washington nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY OF WASHINGTON AND CONTRIBUTORS
- * “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
+ * “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY OF WASHINGTON OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY OF WASHINGTON OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -42,6 +42,7 @@
 
 #define ATL06_DEFAULT_SURFACE_TYPE              SRT_LAND_ICE
 #define ATL06_DEFAULT_SIGNAL_CONFIDENCE         CNF_SURFACE_HIGH
+#define ATL06_DEFAULT_USE_ATL08_CLASSIFICATION  false
 #define ATL06_DEFAULT_ALONG_TRACK_SPREAD        20.0 // meters
 #define ATL06_DEFAULT_MIN_PHOTON_COUNT          10
 #define ATL06_DEFAULT_EXTENT_LENGTH             40.0 // meters
@@ -58,6 +59,8 @@
 const atl06_parms_t DefaultParms = {
     .surface_type               = ATL06_DEFAULT_SURFACE_TYPE,
     .signal_confidence          = ATL06_DEFAULT_SIGNAL_CONFIDENCE,
+    .use_atl08_classification   = ATL06_DEFAULT_USE_ATL08_CLASSIFICATION,
+    .atl08_class                = { false, false, false, false },
     .stages                     = { true },
     .compact                    = ATL06_DEFAULT_COMPACT,
     .points_in_polygon          = 0,
@@ -73,6 +76,73 @@ const atl06_parms_t DefaultParms = {
 /******************************************************************************
  * LOCAL FUNCTIONS
  ******************************************************************************/
+
+static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
+{
+    /* Must be table of classifications */
+    if(lua_istable(L, index))
+    {
+        /* Clear classification table (sets all to false) */
+        LocalLib::set(parms->atl08_class, 0, sizeof(parms->atl08_class));
+
+        /* Get number of classifications in table */
+        int num_classes = lua_rawlen(L, index);
+        if(num_classes > 0 && provided) *provided = true;
+
+        /* Iterate through each classification in table */
+        for(int i = 0; i < num_classes; i++)
+        {
+            /* Get classification */
+            lua_rawgeti(L, index, i+1);
+
+            /* Set classification */
+            if(lua_isinteger(L, -1))
+            {
+                int classification = LuaObject::getLuaInteger(L, -1);
+                if(classification >= 0 && classification < NUM_ATL08_CLASSES)
+                {
+                    parms->atl08_class[classification] = true;
+                    mlog(INFO, "Selecting classification %d", classification);
+                }
+                else
+                {
+                    mlog(ERROR, "Invalid ATL08 classification: %d\n", classification);
+                }
+            }
+            else if(lua_isstring(L, -1))
+            {
+                const char* classifiction_str = LuaObject::getLuaString(L, -1);
+                if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_NOISE))
+                {
+                    parms->atl08_class[ATL08_NOISE] = true;
+                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_NOISE);
+                }
+                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_GROUND))
+                {
+                    parms->atl08_class[ATL08_GROUND] = true;
+                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_GROUND);
+                }
+                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_CANOPY))
+                {
+                    parms->atl08_class[ATL08_CANOPY] = true;
+                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_CANOPY);
+                }
+                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY))
+                {
+                    parms->atl08_class[ATL08_TOP_OF_CANOPY] = true;
+                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY);
+                }
+                else
+                {
+                    mlog(ERROR, "Invalid ATL08 classification: %s\n", classifiction_str);
+                }
+            }
+
+            /* Clean up stack */
+            lua_pop(L, 1);
+        }
+    }
+}
 
 static void get_lua_polygon (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
@@ -141,6 +211,7 @@ static void get_lua_stages (lua_State* L, int index, atl06_parms_t* parms, bool*
                 if(stage >= 0 && stage < NUM_STAGES)
                 {
                     parms->stages[stage] = true;
+                    mlog(INFO, "Enabling stage %d", stage);
                 }
             }
             else if(lua_isstring(L, -1))
@@ -182,6 +253,11 @@ atl06_parms_t* getLuaAtl06Parms (lua_State* L, int index)
             lua_getfield(L, index, LUA_PARM_SIGNAL_CONFIDENCE);
             parms->signal_confidence = (signal_conf_t)LuaObject::getLuaInteger(L, -1, true, parms->signal_confidence, &provided);
             if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_SIGNAL_CONFIDENCE, (int)parms->signal_confidence);
+            lua_pop(L, 1);
+
+            lua_getfield(L, index, LUA_PARM_ATL08_CLASS);
+            get_lua_atl08_class(L, -1, parms, &provided);
+            if(provided) parms->use_atl08_classification = true;
             lua_pop(L, 1);
 
             lua_getfield(L, index, LUA_PARM_POLYGON);

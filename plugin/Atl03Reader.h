@@ -61,11 +61,12 @@ class Atl03Reader: public LuaObject
 
         /* Photon Fields */
         typedef struct {
-            double          distance_x; // double[]: dist_ph_along
-            double          height_y;   // double[]: h_ph
+            double          delta_time; // seconds since ATLAS SDP epoch
             double          latitude;
             double          longitude;
-            double          delta_time; // seconds since ATLAS SDP epoch
+            double          distance;   // double[]: dist_ph_along
+            float           height;     // float[]: h_ph
+            uint32_t        info;       // ATL08 classification bits[3:0]
         } photon_t;
 
         /* Extent Record */

@@ -46,6 +46,7 @@
 
 #define LUA_PARM_SURFACE_TYPE                   "srt"
 #define LUA_PARM_SIGNAL_CONFIDENCE              "cnf"
+#define LUA_PARM_ATL08_CLASS                    "atl08_class"
 #define LUA_PARM_POLYGON                        "poly"
 #define LUA_PARM_STAGES                         "stages"
 #define LUA_PARM_COMPACT                        "compact"
@@ -59,6 +60,10 @@
 #define LUA_PARM_MIN_WINDOW                     "H_min_win"
 #define LUA_PARM_MAX_ROBUST_DISPERSION          "sigma_r_max"
 #define LUA_PARM_STAGE_LSF                      "LSF"
+#define LUA_PARM_ATL08_CLASS_NOISE              "atl08_noise"
+#define LUA_PARM_ATL08_CLASS_GROUND             "atl08_ground"
+#define LUA_PARM_ATL08_CLASS_CANOPY             "atl08_canopy"
+#define LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY      "atl08_top_of_canopy"
 #define LUA_PARM_MAX_COORDS                     16384
 
 /******************************************************************************
@@ -122,6 +127,16 @@ typedef enum {
     SRT_INLAND_WATER = 4
 } surface_type_t;
 
+/* ATL08 Surface Classification */
+typedef enum {
+    ATL08_NOISE = 0,
+    ATL08_GROUND = 1,
+    ATL08_CANOPY = 2,
+    ATL08_TOP_OF_CANOPY = 3,
+    ATL08_UNCLASSIFIED = 4,
+    NUM_ATL08_CLASSES = 4 // does not include unclassified
+} atl08_classification_t;
+
 /* Algorithm Stages */
 typedef enum {
     STAGE_LSF = 0,  // least squares fit
@@ -132,10 +147,12 @@ typedef enum {
 typedef struct {
     surface_type_t          surface_type;                   // surface reference type (used to select signal confidence column)
     signal_conf_t           signal_confidence;              // minimal allowed signal confidence
+    bool                    use_atl08_classification;       // filter photons based on selected atl08 classifications in atl08_class[]
+    bool                    atl08_class[NUM_ATL08_CLASSES]; // list of surface classifications to use (leave empty to skip)
     bool                    stages[NUM_STAGES];             // algorithm iterations
     bool                    compact;                        // return compact (only lat,lon,height,time) elevation information
     List<MathLib::coord_t>  polygon;                        // bounding region
-    int                     points_in_polygon;              //
+    int                     points_in_polygon;              // number of points in bounding region
     int                     max_iterations;                 // least squares fit iterations
     double                  along_track_spread;             // meters
     double                  minimum_photon_count;           // PE

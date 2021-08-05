@@ -478,8 +478,8 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
             /* Calculate Residuals */
             for(int p = 0; p < num_photons; p++)
             {
-                double x = extent->photons[result[t].photons[p].p].distance_x;
-                double y = extent->photons[result[t].photons[p].p].height_y;
+                double x = extent->photons[result[t].photons[p].p].distance;
+                double y = extent->photons[result[t].photons[p].p].height;
                 result[t].photons[p].r = y - (fit.height + (x * fit.slope));
             }
 
@@ -580,7 +580,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
                 if(abs(result[t].photons[p].r) < window_spread)
                 {
                     next_num_photons++;
-                    double x = extent->photons[result[t].photons[p].p].distance_x;
+                    double x = extent->photons[result[t].photons[p].p].distance;
                     if(x < x_min) x_min = x;
                     if(x > x_max) x_max = x;
                 }
@@ -738,7 +738,7 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
     double gtg_22 = 0.0;
     for(int p = 0; p < size; p++)
     {
-        double x = extent->photons[array[p].p].distance_x;
+        double x = extent->photons[array[p].p].distance;
 
         /* Perform Matrix Operation */
         gtg_12_21 += x;
@@ -757,8 +757,8 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
         for(int p = 0; p < size; p++)
         {
             Atl03Reader::photon_t* ph = &extent->photons[array[p].p];
-            double x = ph->distance_x;
-            double y = ph->height_y;
+            double x = ph->distance;
+            double y = ph->height;
 
             /* Perform Matrix Operation */
             double gig_1 = igtg_11 + (igtg_12_21 * x);   // G^-g row 1 element
@@ -785,7 +785,7 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
         for(int p = 0; p < size; p++)
         {
             Atl03Reader::photon_t* ph = &extent->photons[array[p].p];
-            double x = ph->distance_x;
+            double x = ph->distance;
             double lat_y = ph->latitude;
             double lon_y = ph->longitude;
             double gps_y = ph->delta_time;

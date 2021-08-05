@@ -1,31 +1,31 @@
 /*
  * Copyright (c) 2021, University of Washington
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
- * 1. Redistributions of source code must retain the above copyright notice, 
+ *
+ * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  *
- * 2. Redistributions in binary form must reproduce the above copyright notice, 
- *    this list of conditions and the following disclaimer in the documentation 
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
- * 3. Neither the name of the University of Washington nor the names of its 
- *    contributors may be used to endorse or promote products derived from this 
+ *
+ * 3. Neither the name of the University of Washington nor the names of its
+ *    contributors may be used to endorse or promote products derived from this
  *    software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE UNIVERSITY OF WASHINGTON AND CONTRIBUTORS
- * “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED 
+ * “AS IS” AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY OF WASHINGTON OR 
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE UNIVERSITY OF WASHINGTON OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR 
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
@@ -79,25 +79,29 @@ int icesat2_open (lua_State *L)
     luaL_newlib(L, icesat2_functions);
 
     /* Set Globals */
-    LuaEngine::setAttrInt(L, "CNF_POSSIBLE_TEP",    CNF_POSSIBLE_TEP);
-    LuaEngine::setAttrInt(L, "CNF_NOT_CONSIDERED",  CNF_NOT_CONSIDERED);
-    LuaEngine::setAttrInt(L, "CNF_BACKGROUND",      CNF_BACKGROUND);
-    LuaEngine::setAttrInt(L, "CNF_WITHIN_10M",      CNF_WITHIN_10M);
-    LuaEngine::setAttrInt(L, "CNF_SURFACE_LOW",     CNF_SURFACE_LOW);
-    LuaEngine::setAttrInt(L, "CNF_SURFACE_MEDIUM",  CNF_SURFACE_MEDIUM);
-    LuaEngine::setAttrInt(L, "CNF_SURFACE_HIGH",    CNF_SURFACE_HIGH);
-    LuaEngine::setAttrInt(L, "SRT_LAND",            SRT_LAND);
-    LuaEngine::setAttrInt(L, "SRT_OCEAN",           SRT_OCEAN);
-    LuaEngine::setAttrInt(L, "SRT_SEA_ICE",         SRT_SEA_ICE);
-    LuaEngine::setAttrInt(L, "SRT_LAND_ICE",        SRT_LAND_ICE);
-    LuaEngine::setAttrInt(L, "SRT_INLAND_WATER",    SRT_INLAND_WATER);
-    LuaEngine::setAttrInt(L, "STAGE_LSF",           STAGE_LSF);
-    LuaEngine::setAttrInt(L, "ALL_STAGES",          NUM_STAGES);
-    LuaEngine::setAttrInt(L, "ALL_TRACKS",          ALL_TRACKS);
-    LuaEngine::setAttrInt(L, "RPT_1",               RPT_1);
-    LuaEngine::setAttrInt(L, "RPT_2",               RPT_2);
-    LuaEngine::setAttrInt(L, "RPT_3",               RPT_3);
-    LuaEngine::setAttrInt(L, "NUM_TRACKS",          NUM_TRACKS);
+    LuaEngine::setAttrInt(L, "CNF_POSSIBLE_TEP",                    CNF_POSSIBLE_TEP);
+    LuaEngine::setAttrInt(L, "CNF_NOT_CONSIDERED",                  CNF_NOT_CONSIDERED);
+    LuaEngine::setAttrInt(L, "CNF_BACKGROUND",                      CNF_BACKGROUND);
+    LuaEngine::setAttrInt(L, "CNF_WITHIN_10M",                      CNF_WITHIN_10M);
+    LuaEngine::setAttrInt(L, "CNF_SURFACE_LOW",                     CNF_SURFACE_LOW);
+    LuaEngine::setAttrInt(L, "CNF_SURFACE_MEDIUM",                  CNF_SURFACE_MEDIUM);
+    LuaEngine::setAttrInt(L, "CNF_SURFACE_HIGH",                    CNF_SURFACE_HIGH);
+    LuaEngine::setAttrInt(L, "SRT_LAND",                            SRT_LAND);
+    LuaEngine::setAttrInt(L, "SRT_OCEAN",                           SRT_OCEAN);
+    LuaEngine::setAttrInt(L, "SRT_SEA_ICE",                         SRT_SEA_ICE);
+    LuaEngine::setAttrInt(L, "SRT_LAND_ICE",                        SRT_LAND_ICE);
+    LuaEngine::setAttrInt(L, "SRT_INLAND_WATER",                    SRT_INLAND_WATER);
+    LuaEngine::setAttrInt(L, LUA_PARM_STAGE_LSF,                    STAGE_LSF);
+    LuaEngine::setAttrInt(L, "ALL_STAGES",                          NUM_STAGES);
+    LuaEngine::setAttrInt(L, "ALL_TRACKS",                          ALL_TRACKS);
+    LuaEngine::setAttrInt(L, "RPT_1",                               RPT_1);
+    LuaEngine::setAttrInt(L, "RPT_2",                               RPT_2);
+    LuaEngine::setAttrInt(L, "RPT_3",                               RPT_3);
+    LuaEngine::setAttrInt(L, "NUM_TRACKS",                          NUM_TRACKS);
+    LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_NOISE,            ATL08_NOISE);
+    LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_GROUND,           ATL08_GROUND);
+    LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_CANOPY,           ATL08_CANOPY);
+    LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY,    ATL08_TOP_OF_CANOPY);
 
     return 1;
 }

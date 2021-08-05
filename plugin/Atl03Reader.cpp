@@ -53,11 +53,12 @@
 
 const char* Atl03Reader::phRecType = "atl03rec.photons";
 const RecordObject::fieldDef_t Atl03Reader::phRecDef[] = {
-    {"distance",    RecordObject::DOUBLE,   offsetof(photon_t, distance_x), 1,  NULL, NATIVE_FLAGS},
-    {"height",      RecordObject::DOUBLE,   offsetof(photon_t, height_y),   1,  NULL, NATIVE_FLAGS},
+    {"delta_time",  RecordObject::DOUBLE,   offsetof(photon_t, delta_time), 1,  NULL, NATIVE_FLAGS},
     {"latitude",    RecordObject::DOUBLE,   offsetof(photon_t, latitude),   1,  NULL, NATIVE_FLAGS},
     {"longitude",   RecordObject::DOUBLE,   offsetof(photon_t, longitude),  1,  NULL, NATIVE_FLAGS},
-    {"delta_time",  RecordObject::DOUBLE,   offsetof(photon_t, delta_time), 1,  NULL, NATIVE_FLAGS}
+    {"distance",    RecordObject::DOUBLE,   offsetof(photon_t, distance),   1,  NULL, NATIVE_FLAGS},
+    {"height",      RecordObject::FLOAT,    offsetof(photon_t, height),     1,  NULL, NATIVE_FLAGS},
+    {"info",        RecordObject::UINT32,   offsetof(photon_t, info),       1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl03Reader::exRecType = "atl03rec";
@@ -166,11 +167,12 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     /* Read Global Resource Information */
     try
     {
+        /* Read ATL03 Global Data */
         sc_orient       = new H5Array<int8_t> (asset, resource, "/orbit_info/sc_orient", &context);
         start_rgt       = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_rgt", &context);
         start_cycle     = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_cycle", &context);
 
-        /* Read ATL03 Data */
+        /* Read ATL03 Track Data */
         if(track == ALL_TRACKS)
         {
             threadCount = NUM_TRACKS;
@@ -372,19 +374,30 @@ void* Atl03Reader::atl06Thread (void* parm)
         /* Subset to Region of Interest */
         Region region(info, &reader->context);
 
-        /* Read Data from HDF5 File */
+        /* Read ATL03 Data from HDF5 File */
         GTArray<float>      velocity_sc         (asset, resource, track, "geolocation/velocity_sc", &reader->context, H5Api::ALL_COLS, region.first_segment, region.num_segments);
         GTArray<double>     segment_delta_time  (asset, resource, track, "geolocation/delta_time", &reader->context, 0, region.first_segment, region.num_segments);
         GTArray<int32_t>    segment_id          (asset, resource, track, "geolocation/segment_id", &reader->context, 0, region.first_segment, region.num_segments);
         GTArray<double>     segment_dist_x      (asset, resource, track, "geolocation/segment_dist_x", &reader->context, 0, region.first_segment, region.num_segments);
         GTArray<float>      dist_ph_along       (asset, resource, track, "heights/dist_ph_along", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<float>      h_ph                (asset, resource, track, "heights/h_ph", &reader->context, 0, region.first_photon, region.num_photons);
-        GTArray<char>       signal_conf_ph      (asset, resource, track, "heights/signal_conf_ph", &reader->context, reader->parms->surface_type, region.first_photon, region.num_photons);
+        GTArray<int8_t>     signal_conf_ph      (asset, resource, track, "heights/signal_conf_ph", &reader->context, reader->parms->surface_type, region.first_photon, region.num_photons);
         GTArray<double>     lat_ph              (asset, resource, track, "heights/lat_ph", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<double>     lon_ph              (asset, resource, track, "heights/lon_ph", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<double>     delta_time          (asset, resource, track, "heights/delta_time", &reader->context, 0, region.first_photon, region.num_photons);
         GTArray<double>     bckgrd_delta_time   (asset, resource, track, "bckgrd_atlas/delta_time", &reader->context);
         GTArray<float>      bckgrd_rate         (asset, resource, track, "bckgrd_atlas/bckgrd_rate", &reader->context);
+
+        /* Read ATL08 Data from HDF5 File */
+        GTArray<int32_t>* atl08_ph_segment_id   = NULL;
+        GTArray<int32_t>* atl08_classed_pc_indx = NULL;
+        GTArray<int8_t>*  atl08_classed_pc_flag = NULL;
+        if(reader->parms->use_atl08_classification)
+        {
+            atl08_ph_segment_id     = new GTArray<int32_t>(asset, resource, track, "signal_photons/ph_segment_id", &reader->context);
+            atl08_classed_pc_indx   = new GTArray<int32_t>(asset, resource, track, "signal_photons/classed_pc_indx", &reader->context);
+            atl08_classed_pc_flag   = new GTArray<int8_t>(asset, resource, track, "signal_photons/classed_pc_flag", &reader->context);
+        }
 
         /* Early Tear Down of Context */
         mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", resource, (unsigned long)reader->context.read_rqsts, (unsigned long)reader->context.bytes_read);
@@ -398,6 +411,7 @@ void* Atl03Reader::atl06Thread (void* parm)
         double  start_seg_portion[PAIR_TRACKS_PER_GROUND_TRACK] = { 0.0, 0.0 };
         bool    track_complete[PAIR_TRACKS_PER_GROUND_TRACK] = { false, false };
         int32_t bckgrd_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // bckgrd index
+        int32_t atl08_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // ATL08 datasets index
 
         /* Set Number of Photons to Process (if not already set by subsetter) */
         if(region.num_photons[PRT_LEFT] == H5Api::ALL_ROWS) region.num_photons[PRT_LEFT] = dist_ph_along.gt[PRT_LEFT].size;
@@ -470,15 +484,56 @@ void* Atl03Reader::atl06Thread (void* parm)
                     /* Check if Photon within Extent's Length */
                     if(along_track_distance < reader->parms->extent_length)
                     {
-                        /* Check Photon Signal Confidence Level */
-                        if(signal_conf_ph.gt[t][current_photon] >= reader->parms->signal_confidence)
+                        /* Find ATL08 Classification */
+                        atl08_classification_t classification = ATL08_UNCLASSIFIED;
+                        bool acceptable_classification = true;
+                        if(reader->parms->use_atl08_classification)
+                        {
+                            /* Go To Segment */
+                            while(atl08_ph_segment_id->gt[t][atl08_in[t]] < segment_id.gt[t][current_segment])
+                            {
+                                atl08_in[t]++;
+                            }
+
+                            /* Go To Photon */
+                            while( (atl08_ph_segment_id->gt[t][atl08_in[t]] == segment_id.gt[t][current_segment]) &&
+                                   (atl08_classed_pc_indx->gt[t][atl08_in[t]] < current_count) )
+                            {
+                                atl08_in[t]++;
+                            }
+
+                            /* Check Match */
+                            if( (atl08_ph_segment_id->gt[t][atl08_in[t]] == segment_id.gt[t][current_segment]) &&
+                                (atl08_classed_pc_indx->gt[t][atl08_in[t]] == current_count) )
+                            {
+                                /* Assign Classification */
+                                classification = (atl08_classification_t)atl08_classed_pc_flag->gt[t][atl08_in[t]];
+
+                                /* Check Classification */
+                                if(classification >= 0 && classification < NUM_ATL08_CLASSES)
+                                {
+                                    acceptable_classification = reader->parms->atl08_class[classification];
+                                }
+                                else
+                                {
+                                    throw RunTimeException(CRITICAL, "invalid atl08 classification: %d", classification);
+                                }
+
+                                /* Got To Next Photon */
+                                atl08_in[t]++;
+                            }
+                        }
+
+                        /* Check Photon Signal Confidence Level and Classification */
+                        if(acceptable_classification && (signal_conf_ph.gt[t][current_photon] >= reader->parms->signal_confidence))
                         {
                             photon_t ph = {
-                                .distance_x = along_track_distance - (reader->parms->extent_length / 2.0),
-                                .height_y = h_ph.gt[t][current_photon],
+                                .delta_time = delta_time.gt[t][current_photon],
                                 .latitude = lat_ph.gt[t][current_photon],
                                 .longitude = lon_ph.gt[t][current_photon],
-                                .delta_time = delta_time.gt[t][current_photon]
+                                .distance = along_track_distance - (reader->parms->extent_length / 2.0),
+                                .height = h_ph.gt[t][current_photon],
+                                .info = (uint32_t)classification & 0x00000007
                             };
                             extent_photons[t].add(ph);
                         }
@@ -521,7 +576,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 if(extent_photons[t].length() > 1)
                 {
                     int32_t last = extent_photons[t].length() - 1;
-                    double along_track_spread = extent_photons[t][last].distance_x - extent_photons[t][0].distance_x;
+                    double along_track_spread = extent_photons[t][last].distance - extent_photons[t][0].distance;
                     if(along_track_spread < reader->parms->along_track_spread)
                     {
                         extent_valid[t] = false;
