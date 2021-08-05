@@ -396,9 +396,14 @@ void* Atl03Reader::atl06Thread (void* parm)
         /* Read ATL08 Data from HDF5 File */
         if(reader->parms->use_atl08_classification)
         {
-            atl08_ph_segment_id     = new GTArray<int32_t>(asset, resource, track, "signal_photons/ph_segment_id", &reader->context);
-            atl08_classed_pc_indx   = new GTArray<int32_t>(asset, resource, track, "signal_photons/classed_pc_indx", &reader->context);
-            atl08_classed_pc_flag   = new GTArray<int8_t>(asset, resource, track, "signal_photons/classed_pc_flag", &reader->context);
+            /* Build ATL08 Resource Name */
+            SafeString atl08_resource("%s", resource);
+            atl08_resource.setChar('8', 4); // change "ATL03 to ATL08"
+
+            /* Read ATL08 Datasets */
+            atl08_ph_segment_id     = new GTArray<int32_t>(asset, atl08_resource.getString(), track, "signal_photons/ph_segment_id", &reader->context);
+            atl08_classed_pc_indx   = new GTArray<int32_t>(asset, atl08_resource.getString(), track, "signal_photons/classed_pc_indx", &reader->context);
+            atl08_classed_pc_flag   = new GTArray<int8_t>(asset, atl08_resource.getString(), track, "signal_photons/classed_pc_flag", &reader->context);
         }
 
         /* Early Tear Down of Context */

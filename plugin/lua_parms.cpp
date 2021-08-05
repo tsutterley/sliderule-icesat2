@@ -266,7 +266,7 @@ atl06_parms_t* getLuaAtl06Parms (lua_State* L, int index)
 
             lua_getfield(L, index, LUA_PARM_ATL08_CLASS);
             get_lua_atl08_class(L, -1, parms, &provided);
-            if(provided) { printf("PROVIDED\n\n"); parms->use_atl08_classification = true;}
+            if(provided) parms->use_atl08_classification = true;
             lua_pop(L, 1);
 
             lua_getfield(L, index, LUA_PARM_POLYGON);
