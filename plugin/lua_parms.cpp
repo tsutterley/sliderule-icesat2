@@ -51,6 +51,7 @@
 #define ATL06_DEFAULT_MIN_WINDOW                3.0 // meters
 #define ATL06_DEFAULT_MAX_ROBUST_DISPERSION     5.0 // meters
 #define ATL06_DEFAULT_COMPACT                   false
+#define ATL06_DEFAULT_PASS_INVALID              false
 
 /******************************************************************************
  * FILE DATA
@@ -59,8 +60,9 @@
 const atl06_parms_t DefaultParms = {
     .surface_type               = ATL06_DEFAULT_SURFACE_TYPE,
     .signal_confidence          = ATL06_DEFAULT_SIGNAL_CONFIDENCE,
+    .pass_invalid               = ATL06_DEFAULT_PASS_INVALID,
     .use_atl08_classification   = ATL06_DEFAULT_USE_ATL08_CLASSIFICATION,
-    .atl08_class                = { false, false, false, false },
+    .atl08_class                = { false, false, false, false, false },
     .stages                     = { true },
     .compact                    = ATL06_DEFAULT_COMPACT,
     .points_in_polygon          = 0,
@@ -134,6 +136,11 @@ static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, 
                 {
                     parms->atl08_class[ATL08_TOP_OF_CANOPY] = true;
                     mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY);
+                }
+                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_UNCLASSIFIED))
+                {
+                    parms->atl08_class[ATL08_UNCLASSIFIED] = true;
+                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_UNCLASSIFIED);
                 }
                 else
                 {
@@ -262,6 +269,11 @@ atl06_parms_t* getLuaAtl06Parms (lua_State* L, int index)
             lua_getfield(L, index, LUA_PARM_SIGNAL_CONFIDENCE);
             parms->signal_confidence = (signal_conf_t)LuaObject::getLuaInteger(L, -1, true, parms->signal_confidence, &provided);
             if(provided) mlog(INFO, "Setting %s to %d", LUA_PARM_SIGNAL_CONFIDENCE, (int)parms->signal_confidence);
+            lua_pop(L, 1);
+
+            lua_getfield(L, index, LUA_PARM_PASS_INVALID);
+            parms->pass_invalid = LuaObject::getLuaBoolean(L, -1, true, parms->pass_invalid, &provided);
+            if(provided) mlog(INFO, "Setting %s to %s", LUA_PARM_PASS_INVALID, parms->pass_invalid ? "true" : "false");
             lua_pop(L, 1);
 
             lua_getfield(L, index, LUA_PARM_ATL08_CLASS);

@@ -102,6 +102,7 @@ int icesat2_open (lua_State *L)
     LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_GROUND,           ATL08_GROUND);
     LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_CANOPY,           ATL08_CANOPY);
     LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY,    ATL08_TOP_OF_CANOPY);
+    LuaEngine::setAttrInt(L, LUA_PARM_ATL08_CLASS_UNCLASSIFIED,     ATL08_UNCLASSIFIED);
 
     return 1;
 }

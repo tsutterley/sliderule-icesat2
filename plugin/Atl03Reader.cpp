@@ -123,7 +123,7 @@ void Atl03Reader::init (void)
         mlog(CRITICAL, "Failed to define %s: %d", exRecType, ex_rc);
     }
 
-    RecordObject::recordDefErr_t ph_rc = RecordObject::defineRecord(phRecType, NULL, sizeof(extent_t), phRecDef, sizeof(phRecDef) / sizeof(RecordObject::fieldDef_t), 16);
+    RecordObject::recordDefErr_t ph_rc = RecordObject::defineRecord(phRecType, NULL, sizeof(photon_t), phRecDef, sizeof(phRecDef) / sizeof(RecordObject::fieldDef_t), 16);
     if(ph_rc != RecordObject::SUCCESS_DEF)
     {
         mlog(CRITICAL, "Failed to define %s: %d", phRecType, ph_rc);
@@ -515,10 +515,10 @@ void* Atl03Reader::atl06Thread (void* parm)
                             {
                                 /* Assign Classification */
                                 classification = (atl08_classification_t)atl08_classed_pc_flag->gt[t][atl08_in[t]];
-
                                 /* Check Classification */
                                 if(classification >= 0 && classification < NUM_ATL08_CLASSES)
                                 {
+                                    /* Use Photon if Classification Selected */
                                     acceptable_classification = reader->parms->atl08_class[classification];
                                 }
                                 else
@@ -528,6 +528,11 @@ void* Atl03Reader::atl06Thread (void* parm)
 
                                 /* Got To Next Photon */
                                 atl08_in[t]++;
+                            }
+                            else
+                            {
+                                /* Photon Not Classified By ATL08*/
+                                acceptable_classification = reader->parms->atl08_class[ATL08_UNCLASSIFIED];
                             }
                         }
 
@@ -540,7 +545,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                                 .longitude = lon_ph.gt[t][current_photon],
                                 .distance = along_track_distance - (reader->parms->extent_length / 2.0),
                                 .height = h_ph.gt[t][current_photon],
-                                .info = (uint32_t)classification & 0x00000007
+                                .info = (uint32_t)classification
                             };
                             extent_photons[t].add(ph);
                         }
@@ -592,7 +597,7 @@ void* Atl03Reader::atl06Thread (void* parm)
             }
 
             /* Create Extent Record */
-            if(extent_valid[PRT_LEFT] || extent_valid[PRT_RIGHT])
+            if(extent_valid[PRT_LEFT] || extent_valid[PRT_RIGHT] || reader->parms->pass_invalid)
             {
                 /* Calculate Extent Record Size */
                 int num_photons = extent_photons[PRT_LEFT].length() + extent_photons[PRT_RIGHT].length();
@@ -686,7 +691,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 while(reader->active && (post_status = reader->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) <= 0)
                 {
                     local_stats.extents_retried++;
-                    mlog(DEBUG, "Atl03 reader failed to post to stream %s: %d", reader->outQ->getName(), post_status);
+                    mlog(WARNING, "Atl03 reader failed to post to stream %s: %d", reader->outQ->getName(), post_status);
                 }
 
                 /* Update Statistics */

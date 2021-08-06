@@ -59,11 +59,13 @@
 #define LUA_PARM_MAX_ITERATIONS                 "maxi"
 #define LUA_PARM_MIN_WINDOW                     "H_min_win"
 #define LUA_PARM_MAX_ROBUST_DISPERSION          "sigma_r_max"
+#define LUA_PARM_PASS_INVALID                   "pass_invalid"
 #define LUA_PARM_STAGE_LSF                      "LSF"
 #define LUA_PARM_ATL08_CLASS_NOISE              "atl08_noise"
 #define LUA_PARM_ATL08_CLASS_GROUND             "atl08_ground"
 #define LUA_PARM_ATL08_CLASS_CANOPY             "atl08_canopy"
 #define LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY      "atl08_top_of_canopy"
+#define LUA_PARM_ATL08_CLASS_UNCLASSIFIED       "atl08_unclassified"
 #define LUA_PARM_MAX_COORDS                     16384
 
 /******************************************************************************
@@ -134,7 +136,7 @@ typedef enum {
     ATL08_CANOPY = 2,
     ATL08_TOP_OF_CANOPY = 3,
     ATL08_UNCLASSIFIED = 4,
-    NUM_ATL08_CLASSES = 4 // does not include unclassified
+    NUM_ATL08_CLASSES = 5
 } atl08_classification_t;
 
 /* Algorithm Stages */
@@ -147,6 +149,7 @@ typedef enum {
 typedef struct {
     surface_type_t          surface_type;                   // surface reference type (used to select signal confidence column)
     signal_conf_t           signal_confidence;              // minimal allowed signal confidence
+    bool                    pass_invalid;                   // post extent even if each pair is invalid
     bool                    use_atl08_classification;       // filter photons based on selected atl08 classifications in atl08_class[]
     bool                    atl08_class[NUM_ATL08_CLASSES]; // list of surface classifications to use (leave empty to skip)
     bool                    stages[NUM_STAGES];             // algorithm iterations
