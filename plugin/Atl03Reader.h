@@ -166,7 +166,8 @@ class Atl03Reader: public LuaObject
         atl06_parms_t*      parms;
         stats_t             stats;
 
-        H5Api::context_t    context;
+        H5Api::context_t    context; // for ATL03 file
+        H5Api::context_t    context08; // for ATL08 file
 
         H5Array<int8_t>*    sc_orient;
         H5Array<int32_t>*   start_rgt;
