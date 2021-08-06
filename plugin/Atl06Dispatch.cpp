@@ -781,23 +781,51 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
         fit.longitude = 0.0;
         fit.delta_time = 0.0;
 
-        /* Calculate G^-g and m */
-        for(int p = 0; p < size; p++)
+        if(size > 0)
         {
-            Atl03Reader::photon_t* ph = &extent->photons[array[p].p];
-            double x = ph->distance;
-            double lat_y = ph->latitude;
-            double lon_y = ph->longitude;
-            double gps_y = ph->delta_time;
+            /* Check Need to Shift Longitudes
+                    assumes that there isn't a set of photons with
+                    longitudes that extend for more than 30 degrees */
+            double shift_lon = false;
+            double first_lon = extent->photons[array[0].p].longitude;
+            if(first_lon < -150.0 || first_lon > 150.0)
+            {
+                shift_lon = true;
+            }
 
-            /* Perform Matrix Operation */
-            double gig_1 = igtg_11 + (igtg_12_21 * x);   // G^-g row 1 element
-            double gig_2 = igtg_12_21 + (igtg_22 * x);   // G^-g row 2 element
+            /* Calculate G^-g and m */
+            for(int p = 0; p < size; p++)
+            {
+                Atl03Reader::photon_t* ph = &extent->photons[array[p].p];
+                double x = ph->distance;
+                double lat_y = ph->latitude;
+                double lon_y = ph->longitude;
+                double gps_y = ph->delta_time;
 
-            /* Calculate m */
-            fit.latitude += gig_1 * lat_y;
-            fit.longitude += gig_1 * lon_y;
-            fit.delta_time += gig_1 * gps_y;
+                /* Shift Longitudes */
+                if(shift_lon)
+                {
+                    if(lon_y < 0.0) lon_y = -lon_y;
+                    else            lon_y = 360.0 - lon_y;
+                }
+
+                /* Perform Matrix Operation */
+                double gig_1 = igtg_11 + (igtg_12_21 * x);   // G^-g row 1 element
+                double gig_2 = igtg_12_21 + (igtg_22 * x);   // G^-g row 2 element
+
+                /* Calculate m */
+                fit.latitude += gig_1 * lat_y;
+                fit.longitude += gig_1 * lon_y;
+                fit.delta_time += gig_1 * gps_y;
+            }
+
+            /* Check if Longitude Needs to be Shifted Back */
+            if(shift_lon)
+            {
+                if(fit.longitude < 180.0)   fit.longitude = -fit.longitude;
+                else                        fit.longitude = 360.0 - fit.longitude;
+            }
+
         }
     }
 
