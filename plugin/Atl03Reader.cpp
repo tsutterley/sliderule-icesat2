@@ -448,6 +448,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                 int32_t current_photon = ph_in[t];
                 int32_t current_segment = seg_in[t];
                 int32_t current_count = seg_ph[t]; // number of photons in current segment already accounted for
+                int32_t current_atl08_photon = atl08_in[t];
                 bool extent_complete = false;
                 bool step_complete = false;
 
@@ -485,6 +486,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                         ph_in[t] = current_photon;
                         seg_in[t] = current_segment;
                         seg_ph[t] = current_count - 1;
+                        atl08_in[t] = current_atl08_photon;
                         step_complete = true;
                     }
 
@@ -497,24 +499,24 @@ void* Atl03Reader::atl06Thread (void* parm)
                         if(reader->parms->use_atl08_classification)
                         {
                             /* Go To Segment */
-                            while(atl08_ph_segment_id->gt[t][atl08_in[t]] < segment_id.gt[t][current_segment])
+                            while(atl08_ph_segment_id->gt[t][current_atl08_photon] < segment_id.gt[t][current_segment])
                             {
-                                atl08_in[t]++;
+                                current_atl08_photon++;
                             }
 
                             /* Go To Photon */
-                            while( (atl08_ph_segment_id->gt[t][atl08_in[t]] == segment_id.gt[t][current_segment]) &&
-                                   (atl08_classed_pc_indx->gt[t][atl08_in[t]] < current_count) )
+                            while( (atl08_ph_segment_id->gt[t][current_atl08_photon] == segment_id.gt[t][current_segment]) &&
+                                   (atl08_classed_pc_indx->gt[t][current_atl08_photon] < current_count) )
                             {
-                                atl08_in[t]++;
+                                current_atl08_photon++;
                             }
 
                             /* Check Match */
-                            if( (atl08_ph_segment_id->gt[t][atl08_in[t]] == segment_id.gt[t][current_segment]) &&
-                                (atl08_classed_pc_indx->gt[t][atl08_in[t]] == current_count) )
+                            if( (atl08_ph_segment_id->gt[t][current_atl08_photon] == segment_id.gt[t][current_segment]) &&
+                                (atl08_classed_pc_indx->gt[t][current_atl08_photon] == current_count) )
                             {
                                 /* Assign Classification */
-                                classification = (atl08_classification_t)atl08_classed_pc_flag->gt[t][atl08_in[t]];
+                                classification = (atl08_classification_t)atl08_classed_pc_flag->gt[t][current_atl08_photon];
                                 /* Check Classification */
                                 if(classification >= 0 && classification < NUM_ATL08_CLASSES)
                                 {
@@ -527,7 +529,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                                 }
 
                                 /* Got To Next Photon */
-                                atl08_in[t]++;
+                                current_atl08_photon++;
                             }
                             else
                             {
