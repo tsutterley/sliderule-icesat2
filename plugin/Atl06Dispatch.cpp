@@ -811,7 +811,6 @@ Atl06Dispatch::lsf_t Atl06Dispatch::lsf (Atl03Reader::extent_t* extent, point_t*
 
                 /* Perform Matrix Operation */
                 double gig_1 = igtg_11 + (igtg_12_21 * x);   // G^-g row 1 element
-                double gig_2 = igtg_12_21 + (igtg_22 * x);   // G^-g row 2 element
 
                 /* Calculate m */
                 fit.latitude += gig_1 * lat_y;
