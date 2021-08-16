@@ -72,16 +72,16 @@ while not atl06_disp:waiton(interval) do
         return
     end
     -- Get Stats --
-    local atl03_stats = atl03_reader:stats(false)
     local atl06_stats = atl06_algo:stats(false)
     -- Dispay Progress --
     if atl06_stats.h5atl03 == 0 then
         userlog:sendlog(core.INFO, string.format("... continuing to read %s (after %d seconds)", resource, duration / 1000))
     else
-        userlog:sendlog(core.INFO, string.format("processed %d out of %d segments in %s (after %d seconds)", atl06_stats.h5atl03, atl03_stats.read, resource, duration / 1000))
+        userlog:sendlog(core.INFO, string.format("processed %d segments in %s (after %d seconds)", atl06_stats.h5atl03, resource, duration / 1000))
     end
 end
 
 -- Processing Complete
-userlog:sendlog(core.INFO, string.format("processing of %s complete", resource))
+local atl03_stats = atl03_reader:stats(false)
+userlog:sendlog(core.INFO, string.format("processing of %s complete (%d/%d/%d)", resource, atl03_stats.read, atl03_stats.filtered, atl03_stats.dropped))
 return
