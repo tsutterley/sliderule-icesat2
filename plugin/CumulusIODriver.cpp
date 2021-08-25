@@ -84,7 +84,7 @@ void CumulusIODriver::ioOpen (const char* resource)
     day[2] = '\0';
 
     SafeString resourcepath("%s/ATLAS/%s/%s/%s/%s/%s/%s", asset->getPath(), product, version, year, month, day, resource);
-    mlog(INFO, "Opening resource: %s\n", resourcepath.getString());
+    mlog(INFO, "Opening resource: %s", resourcepath.getString());
 
     /* Allocate Memory for ioBucket */
     ioBucket = StringLib::duplicate(resourcepath.getString());

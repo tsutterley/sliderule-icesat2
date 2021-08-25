@@ -520,44 +520,43 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
                 while(i0 < num_photons)
                 {
                     double spp = (0.25 * signal_count) + ((result[t].photons[i0].r - window_lower_bound) * background_rate); // section 5.9, procedure 4a
-                    if( (((double)i0) + 1.0 - 0.5) < spp )  i0++;
-                    else                                    break;
+                    if( (((double)i0) + 1.0 - 0.5 + 1.0) < spp )    i0++;   // +1 adjusts for 0 vs 1 based indices, -.5 rounds, +1 looks ahead
+                    else                                            break;
                 }
 
                 /* Find Smallest Potential Percentiles (1) */
-                int32_t i1 = num_photons;
+                int32_t i1 = num_photons - 1;
                 while(i1 >= 0)
                 {
                     double spp = (0.75 * signal_count) + ((result[t].photons[i1].r - window_lower_bound) * background_rate); // section 5.9, procedure 4a
-                    if( (((double)i1) - 1.0 - 0.5) > spp )  i1--;
-                    else                                    break;
+                    if( (((double)i1) + 1.0 - 0.5 - 1.0) > spp )    i1--;   // +1 adjusts for 0 vs 1 based indices, -.5 rounds, +1 looks ahead
+                    else                                            break;
                 }
 
                 /* Check Need to Refind Percentiles */
                 if(i1 < i0)
                 {
-                    double spp0 = (num_photons / 4.0) - (signal_count / 2.0); // section 5.9, procedure 5a
-                    double spp1 = (num_photons / 4.0) + (signal_count / 2.0); // section 5.9, procedure 5b
-
                     /* Find Spread of Central Values (0) */
-                    i0 = 0;
-                    while(i0 < num_photons)
-                    {
-                        if( (((double)i0) + 1.0 - 0.5) < spp0 ) i0++;
-                        else                                    break;
-                    }
+                    double spp0 = (num_photons / 2.0) - (signal_count / 4.0); // section 5.9, procedure 5a
+                    i0 = (int32_t)(spp0 + 0.5) - 1;
 
                     /* Find Spread of Central Values (1) */
-                    i1 = num_photons;
-                    while(i1 >= 0)
-                    {
-                        if( (((double)i1) - 1.0 - 0.5) > spp1 ) i1--;
-                        else                                    break;
-                    }
+                    double spp1 = (num_photons / 2.0) + (signal_count / 4.0); // section 5.9, procedure 5b
+                    i1 = (int32_t)(spp1 + 0.5);
                 }
 
-                /* Calculate Robust Dispersion Estimate */
-                sigma_r = (result[t].photons[i1].r - result[t].photons[i0].r) / RDE_SCALE_FACTOR; // section 5.9, procedure 6
+                /* Check Validity of Percentiles */
+                if(i0 >= 0 && i1 < num_photons)
+                {
+                    /* Calculate Robust Dispersion Estimate */
+                    sigma_r = (result[t].photons[i1].r - result[t].photons[i0].r) / RDE_SCALE_FACTOR; // section 5.9, procedure 6
+                }
+                else
+                {
+                    mlog(CRITICAL, "Out of bounds condition caught: %d, %d, %d\n", i0, i1, num_photons);
+                    result[t].elevation.pflags |= PFLAG_OUT_OF_BOUNDS;
+                    invalid = true;
+                }
             }
 
             /* Calculate Sigma Expected */

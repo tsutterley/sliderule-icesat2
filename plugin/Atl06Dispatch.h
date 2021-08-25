@@ -70,6 +70,7 @@ class Atl06Dispatch: public DispatchObject
         static const uint16_t PFLAG_SPREAD_TOO_SHORT        = 0x0001;   // LUA_PARM_ALONG_TRACK_SPREAD
         static const uint16_t PFLAG_TOO_FEW_PHOTONS         = 0x0002;   // LUA_PARM_MIN_PHOTON_COUNT
         static const uint16_t PFLAG_MAX_ITERATIONS_REACHED  = 0x0004;   // LUA_PARM_MAX_ITERATIONS
+        static const uint16_t PFLAG_OUT_OF_BOUNDS           = 0x0008;
 
         static const char* elCompactRecType;
         static const RecordObject::fieldDef_t elCompactRecDef[];
