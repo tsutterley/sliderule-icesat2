@@ -201,7 +201,7 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     }
     catch(const RunTimeException& e)
     {
-        mlog(e.level(), "Failed to read global information in resource %s: %s\n", resource, e.what());
+        mlog(e.level(), "Failed to read global information in resource %s: %s", resource, e.what());
 
         /* Indicate End of Data */
         outQ->postCopy("", 0);
@@ -470,7 +470,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                     /* Check Current Segment */
                     if(current_segment >= segment_dist_x.gt[t].size)
                     {
-                        mlog(ERROR, "Photons with no segments are detected is %s!\n", resource);
+                        mlog(ERROR, "Photons with no segments are detected is %s!", resource);
                         track_complete[t] = true;
                         break;
                     }

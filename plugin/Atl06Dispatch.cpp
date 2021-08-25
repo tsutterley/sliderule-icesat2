@@ -553,7 +553,7 @@ void Atl06Dispatch::iterativeFitStage (Atl03Reader::extent_t* extent, result_t* 
                 }
                 else
                 {
-                    mlog(CRITICAL, "Out of bounds condition caught: %d, %d, %d\n", i0, i1, num_photons);
+                    mlog(CRITICAL, "Out of bounds condition caught: %d, %d, %d", i0, i1, num_photons);
                     result[t].elevation.pflags |= PFLAG_OUT_OF_BOUNDS;
                     invalid = true;
                 }

@@ -111,7 +111,7 @@ static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, 
                 }
                 else
                 {
-                    mlog(ERROR, "Invalid ATL08 classification: %d\n", classification);
+                    mlog(ERROR, "Invalid ATL08 classification: %d", classification);
                 }
             }
             else if(lua_isstring(L, -1))
@@ -144,7 +144,7 @@ static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, 
                 }
                 else
                 {
-                    mlog(ERROR, "Invalid ATL08 classification: %s\n", classifiction_str);
+                    mlog(ERROR, "Invalid ATL08 classification: %s", classifiction_str);
                 }
             }
 
