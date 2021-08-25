@@ -79,12 +79,22 @@ const atl06_parms_t DefaultParms = {
  * LOCAL FUNCTIONS
  ******************************************************************************/
 
+static atl08_classification_t str2atl08class (const char* classifiction_str)
+{
+    if     (StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_NOISE))            return ATL08_NOISE;
+    else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_GROUND))           return ATL08_GROUND;
+    else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_CANOPY))           return ATL08_CANOPY;
+    else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY))    return ATL08_TOP_OF_CANOPY;
+    else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_UNCLASSIFIED))     return ATL08_UNCLASSIFIED;
+    else                                                                                return ATL08_INVALID_CLASSIFICATION;
+}
+
 static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, bool* provided)
 {
     /* Reset Provided */
     *provided = false;
 
-    /* Must be table of classifications */
+    /* Must be table of classifications or a single classification as a string */
     if(lua_istable(L, index))
     {
         /* Clear classification table (sets all to false) */
@@ -117,30 +127,11 @@ static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, 
             else if(lua_isstring(L, -1))
             {
                 const char* classifiction_str = LuaObject::getLuaString(L, -1);
-                if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_NOISE))
+                atl08_classification_t atl08class = str2atl08class(classifiction_str);
+                if(atl08class != ATL08_INVALID_CLASSIFICATION)
                 {
-                    parms->atl08_class[ATL08_NOISE] = true;
-                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_NOISE);
-                }
-                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_GROUND))
-                {
-                    parms->atl08_class[ATL08_GROUND] = true;
-                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_GROUND);
-                }
-                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_CANOPY))
-                {
-                    parms->atl08_class[ATL08_CANOPY] = true;
-                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_CANOPY);
-                }
-                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY))
-                {
-                    parms->atl08_class[ATL08_TOP_OF_CANOPY] = true;
-                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_TOP_OF_CANOPY);
-                }
-                else if(StringLib::match(classifiction_str, LUA_PARM_ATL08_CLASS_UNCLASSIFIED))
-                {
-                    parms->atl08_class[ATL08_UNCLASSIFIED] = true;
-                    mlog(INFO, "Selecting %s classification", LUA_PARM_ATL08_CLASS_UNCLASSIFIED);
+                    parms->atl08_class[atl08class] = true;
+                    mlog(INFO, "Selecting %s classification", classifiction_str);
                 }
                 else
                 {
@@ -151,6 +142,25 @@ static void get_lua_atl08_class (lua_State* L, int index, atl06_parms_t* parms, 
             /* Clean up stack */
             lua_pop(L, 1);
         }
+    }
+    else if(lua_isstring(L, index))
+    {
+        const char* classifiction_str = LuaObject::getLuaString(L, index);
+        atl08_classification_t atl08class = str2atl08class(classifiction_str);
+        if(atl08class != ATL08_INVALID_CLASSIFICATION)
+        {
+            if(provided) *provided = true;
+            parms->atl08_class[atl08class] = true;
+            mlog(INFO, "Selecting %s classification", classifiction_str);
+        }
+        else
+        {
+            mlog(ERROR, "Invalid ATL08 classification: %s", classifiction_str);
+        }
+    }
+    else
+    {
+        mlog(ERROR, "ATL08 classification must be provided as a table or string");
     }
 }
 

@@ -136,7 +136,8 @@ typedef enum {
     ATL08_CANOPY = 2,
     ATL08_TOP_OF_CANOPY = 3,
     ATL08_UNCLASSIFIED = 4,
-    NUM_ATL08_CLASSES = 5
+    NUM_ATL08_CLASSES = 5,
+    ATL08_INVALID_CLASSIFICATION = 6
 } atl08_classification_t;
 
 /* Algorithm Stages */
