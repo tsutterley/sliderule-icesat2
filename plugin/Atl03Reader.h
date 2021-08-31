@@ -162,6 +162,7 @@ class Atl03Reader: public LuaObject
         Mutex               threadMut;
         int                 threadCount;
         int                 numComplete;
+        Asset*              asset;
         Publisher*          outQ;
         atl06_parms_t*      parms;
         stats_t             stats;
@@ -177,7 +178,7 @@ class Atl03Reader: public LuaObject
          * Methods
          *--------------------------------------------------------------------*/
 
-                            Atl03Reader         (lua_State* L, const Asset* asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track=ALL_TRACKS);
+                            Atl03Reader         (lua_State* L, Asset* _asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track=ALL_TRACKS);
                             ~Atl03Reader        (void);
 
         static void*        atl06Thread         (void* parm);

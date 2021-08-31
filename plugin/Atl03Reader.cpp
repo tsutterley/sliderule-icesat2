@@ -95,7 +95,7 @@ int Atl03Reader::luaCreate (lua_State* L)
     try
     {
         /* Get URL */
-        const Asset* asset = (const Asset*)getLuaObject(L, 1, Asset::OBJECT_TYPE);
+        Asset* asset = (Asset*)getLuaObject(L, 1, Asset::OBJECT_TYPE);
         const char* resource = getLuaString(L, 2);
         const char* outq_name = getLuaString(L, 3);
         atl06_parms_t* parms = getLuaAtl06Parms(L, 4);
@@ -132,13 +132,16 @@ void Atl03Reader::init (void)
 /*----------------------------------------------------------------------------
  * Constructor
  *----------------------------------------------------------------------------*/
-Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track):
+Atl03Reader::Atl03Reader (lua_State* L, Asset* _asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track):
     LuaObject(L, OBJECT_TYPE, LuaMetaName, LuaMetaTable)
 {
     assert(asset);
     assert(resource);
     assert(outq_name);
     assert(_parms);
+
+    /* Save Pointer to Asset */
+    asset = _asset;
 
     /* Create Publisher */
     outQ = new Publisher(outq_name);
@@ -167,9 +170,9 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
     try
     {
         /* Read ATL03 Global Data */
-        sc_orient       = new H5Array<int8_t> (asset, resource, "/orbit_info/sc_orient", &context);
-        start_rgt       = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_rgt", &context);
-        start_cycle     = new H5Array<int32_t>(asset, resource, "/ancillary_data/start_cycle", &context);
+        sc_orient       = new H5Array<int8_t> (_asset, resource, "/orbit_info/sc_orient", &context);
+        start_rgt       = new H5Array<int32_t>(_asset, resource, "/ancillary_data/start_rgt", &context);
+        start_cycle     = new H5Array<int32_t>(_asset, resource, "/ancillary_data/start_cycle", &context);
 
         /* Read ATL03 Track Data */
         if(track == ALL_TRACKS)
@@ -181,7 +184,7 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
             {
                 info_t* info = new info_t;
                 info->reader = this;
-                info->asset = asset;
+                info->asset = _asset;
                 info->resource = StringLib::duplicate(resource);
                 info->track = t + 1;
                 readerPid[t] = new Thread(atl06Thread, info);
@@ -193,7 +196,7 @@ Atl03Reader::Atl03Reader (lua_State* L, const Asset* asset, const char* resource
             threadCount = 1;
             info_t* info = new info_t;
             info->reader = this;
-            info->asset = asset;
+            info->asset = _asset;
             info->resource = StringLib::duplicate(resource);
             info->track = track;
             atl06Thread(info);
@@ -227,6 +230,8 @@ Atl03Reader::~Atl03Reader (void)
     if(sc_orient)       delete sc_orient;
     if(start_rgt)       delete start_rgt;
     if(start_cycle)     delete start_cycle;
+
+    asset->releaseLuaObject();
 }
 
 /*----------------------------------------------------------------------------
