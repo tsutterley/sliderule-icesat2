@@ -135,7 +135,7 @@ void Atl03Reader::init (void)
 Atl03Reader::Atl03Reader (lua_State* L, Asset* _asset, const char* resource, const char* outq_name, atl06_parms_t* _parms, int track):
     LuaObject(L, OBJECT_TYPE, LuaMetaName, LuaMetaTable)
 {
-    assert(asset);
+    assert(_asset);
     assert(resource);
     assert(outq_name);
     assert(_parms);
