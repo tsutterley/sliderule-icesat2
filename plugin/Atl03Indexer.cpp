@@ -68,6 +68,8 @@ const struct luaL_Reg Atl03Indexer::LuaMetaTable[] = {
  *----------------------------------------------------------------------------*/
 int Atl03Indexer::luaCreate (lua_State* L)
 {
+    List<const char*>* _resources = NULL;
+
     try
     {
         /* Get URL */
@@ -77,7 +79,7 @@ int Atl03Indexer::luaCreate (lua_State* L)
         int         num_threads = getLuaInteger(L, 4, true, DEFAULT_NUM_THREADS);
 
         /* Build Resource Table */
-        List<const char*>* _resources = new List<const char*>();
+        _resources = new List<const char*>();
         if(lua_type(L, tblindex) == LUA_TTABLE)
         {
             int size = lua_rawlen(L, tblindex);
@@ -100,8 +102,13 @@ int Atl03Indexer::luaCreate (lua_State* L)
     catch(const RunTimeException& e)
     {
         mlog(e.level(), "Error creating Atl03Indexer: %s", e.what());
-        return returnLuaStatus(L, false);
     }
+
+    /* Clean Up Resources Not Used Since Failed to Create Indexer */
+    if(_resources) freeResources(_resources);
+
+    /* Return Failure */
+    return returnLuaStatus(L, false);
 }
 
 /*----------------------------------------------------------------------------
@@ -179,11 +186,7 @@ Atl03Indexer::~Atl03Indexer (void)
     delete outQ;
 
     /* Clean Up Resource List */
-    for(int i = resourceEntry; i < resources->length(); i++)
-    {
-        delete [] resources->get(i);
-    }
-    delete resources;
+    freeResources(resources);
 
     /* Release Asset */
     asset->releaseLuaObject();
@@ -252,8 +255,8 @@ void* Atl03Indexer::indexerThread (void* parm)
                 context = NULL;
 
                 /* Allocate Record */
-                RecordObject* record = new RecordObject(recType);
-                index_t* index = (index_t*)record->getRecordData();
+                RecordObject record(recType);
+                index_t* index = (index_t*)record.getRecordData();
 
                 /* Copy In Fields */
                 StringLib::copy(index->name, resource_name, Asset::RESOURCE_NAME_LENGTH);
@@ -268,12 +271,14 @@ void* Atl03Indexer::indexerThread (void* parm)
 
                 /* Post Segment Record */
                 uint8_t* rec_buf = NULL;
-                int rec_bytes = record->serialize(&rec_buf, RecordObject::REFERENCE);
+                int rec_bytes = record.serialize(&rec_buf, RecordObject::REFERENCE);
                 int post_status = MsgQ::STATE_ERROR;
                 while(indexer->active && (post_status = indexer->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) <= 0)
                 {
                     mlog(DEBUG, "Atl03 indexer failed to post to stream %s: %d", indexer->outQ->getName(), post_status);
                 }
+
+                /* Free Record */
             }
         }
     }
@@ -303,6 +308,18 @@ void* Atl03Indexer::indexerThread (void* parm)
 
     /* Return */
     return NULL;
+}
+
+/*----------------------------------------------------------------------------
+ * freeResources
+ *----------------------------------------------------------------------------*/
+void Atl03Indexer::freeResources (List<const char*>* _resources)
+{
+    for(int i = 0; i < _resources->length(); i++)
+    {
+        delete [] _resources->get(i);
+    }
+    delete _resources;
 }
 
 /*----------------------------------------------------------------------------
