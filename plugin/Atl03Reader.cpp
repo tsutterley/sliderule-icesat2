@@ -410,9 +410,6 @@ void* Atl03Reader::atl06Thread (void* parm)
             atl08_classed_pc_flag   = new GTArray<int8_t>(asset, atl08_resource.getString(), track, "signal_photons/classed_pc_flag", &reader->context08);
         }
 
-        /* Early Tear Down of Context */
-        mlog(INFO, "I/O context for %s: %lu reads, %lu bytes", resource, (unsigned long)reader->context.read_rqsts, (unsigned long)reader->context.bytes_read);
-
         /* Initialize Dataset Scope Variables */
         int32_t ph_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // photon index
         int32_t seg_in[PAIR_TRACKS_PER_GROUND_TRACK] = { 0, 0 }; // segment index
