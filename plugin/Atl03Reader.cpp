@@ -500,20 +500,23 @@ void* Atl03Reader::atl06Thread (void* parm)
                         if(reader->parms->use_atl08_classification)
                         {
                             /* Go To Segment */
-                            while(atl08_ph_segment_id->gt[t][current_atl08_photon] < segment_id.gt[t][current_segment])
+                            while( (current_atl08_photon < atl08_ph_segment_id->gt[t].size) &&
+                                   (atl08_ph_segment_id->gt[t][current_atl08_photon] < segment_id.gt[t][current_segment]) )
                             {
                                 current_atl08_photon++;
                             }
 
                             /* Go To Photon */
-                            while( (atl08_ph_segment_id->gt[t][current_atl08_photon] == segment_id.gt[t][current_segment]) &&
+                            while( (current_atl08_photon < atl08_ph_segment_id->gt[t].size) &&
+                                   (atl08_ph_segment_id->gt[t][current_atl08_photon] == segment_id.gt[t][current_segment]) &&
                                    (atl08_classed_pc_indx->gt[t][current_atl08_photon] < current_count) )
                             {
                                 current_atl08_photon++;
                             }
 
                             /* Check Match */
-                            if( (atl08_ph_segment_id->gt[t][current_atl08_photon] == segment_id.gt[t][current_segment]) &&
+                            if( (current_atl08_photon < atl08_ph_segment_id->gt[t].size) &&
+                                (atl08_ph_segment_id->gt[t][current_atl08_photon] == segment_id.gt[t][current_segment]) &&
                                 (atl08_classed_pc_indx->gt[t][current_atl08_photon] == current_count) )
                             {
                                 /* Assign Classification */
