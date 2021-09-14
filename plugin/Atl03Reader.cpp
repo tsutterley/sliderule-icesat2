@@ -610,8 +610,8 @@ void* Atl03Reader::atl06Thread (void* parm)
                 int extent_bytes = sizeof(extent_t) + (sizeof(photon_t) * num_photons);
 
                 /* Allocate and Initialize Extent Record */
-                RecordObject* record = new RecordObject(exRecType, extent_bytes);
-                extent_t* extent = (extent_t*)record->getRecordData();
+                RecordObject record(exRecType, extent_bytes);
+                extent_t* extent = (extent_t*)record.getRecordData();
                 extent->reference_pair_track = track;
                 extent->spacecraft_orientation = (*reader->sc_orient)[0];
                 extent->reference_ground_track_start = (*reader->start_rgt)[0];
@@ -692,25 +692,23 @@ void* Atl03Reader::atl06Thread (void* parm)
 
                 /* Post Segment Record */
                 uint8_t* rec_buf = NULL;
-                int rec_bytes = record->serialize(&rec_buf, RecordObject::REFERENCE);
-                int post_status = MsgQ::STATE_ERROR;
-                while(reader->active && (post_status = reader->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) <= 0)
+                int rec_bytes = record.serialize(&rec_buf, RecordObject::REFERENCE);
+                int post_status = MsgQ::STATE_TIMEOUT;
+                while(reader->active && (post_status = reader->outQ->postCopy(rec_buf, rec_bytes, SYS_TIMEOUT)) == MsgQ::STATE_TIMEOUT)
                 {
                     local_stats.extents_retried++;
-                    mlog(WARNING, "Atl03 reader failed to post to stream %s: %d", reader->outQ->getName(), post_status);
                 }
 
                 /* Update Statistics */
-                if(post_status > 0) local_stats.extents_sent++;
-                else                local_stats.extents_dropped++;
-
-                /*
-                 * Clean Up Record
-                 *  It should be safe to delete here because there should be no
-                 *  way an exception is thrown between the code that allocates the record
-                 *  and the code below that deletes it.
-                 */
-                delete record;
+                if(post_status > 0)
+                {
+                    local_stats.extents_sent++;
+                }
+                else
+                {
+                    mlog(ERROR, "Atl03 reader failed to post to stream %s: %d", reader->outQ->getName(), post_status);
+                    local_stats.extents_dropped++;
+                }
             }
             else // neither pair in extent valid
             {
