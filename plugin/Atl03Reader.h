@@ -66,7 +66,8 @@ class Atl03Reader: public LuaObject
             double          longitude;
             double          distance;   // double[]: dist_ph_along
             float           height;     // float[]: h_ph
-            uint32_t        info;       // ATL08 classification bits[3:0]
+            uint16_t        atl08_class;// ATL08 classification
+            int16_t         atl03_cnf;  // ATL03 confidence level
         } photon_t;
 
         /* Extent Record */

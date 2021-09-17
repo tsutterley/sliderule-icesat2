@@ -53,12 +53,13 @@
 
 const char* Atl03Reader::phRecType = "atl03rec.photons";
 const RecordObject::fieldDef_t Atl03Reader::phRecDef[] = {
-    {"delta_time",  RecordObject::DOUBLE,   offsetof(photon_t, delta_time), 1,  NULL, NATIVE_FLAGS},
-    {"latitude",    RecordObject::DOUBLE,   offsetof(photon_t, latitude),   1,  NULL, NATIVE_FLAGS},
-    {"longitude",   RecordObject::DOUBLE,   offsetof(photon_t, longitude),  1,  NULL, NATIVE_FLAGS},
-    {"distance",    RecordObject::DOUBLE,   offsetof(photon_t, distance),   1,  NULL, NATIVE_FLAGS},
-    {"height",      RecordObject::FLOAT,    offsetof(photon_t, height),     1,  NULL, NATIVE_FLAGS},
-    {"info",        RecordObject::UINT32,   offsetof(photon_t, info),       1,  NULL, NATIVE_FLAGS}
+    {"delta_time",  RecordObject::DOUBLE,   offsetof(photon_t, delta_time),     1,  NULL, NATIVE_FLAGS},
+    {"latitude",    RecordObject::DOUBLE,   offsetof(photon_t, latitude),       1,  NULL, NATIVE_FLAGS},
+    {"longitude",   RecordObject::DOUBLE,   offsetof(photon_t, longitude),      1,  NULL, NATIVE_FLAGS},
+    {"distance",    RecordObject::DOUBLE,   offsetof(photon_t, distance),       1,  NULL, NATIVE_FLAGS},
+    {"height",      RecordObject::FLOAT,    offsetof(photon_t, height),         1,  NULL, NATIVE_FLAGS},
+    {"atl08_class", RecordObject::UINT16,   offsetof(photon_t, atl08_class),    1,  NULL, NATIVE_FLAGS},
+    {"atl03_cnf",   RecordObject::INT16,    offsetof(photon_t, atl03_cnf),      1,  NULL, NATIVE_FLAGS}
 };
 
 const char* Atl03Reader::exRecType = "atl03rec";
@@ -521,6 +522,7 @@ void* Atl03Reader::atl06Thread (void* parm)
                             {
                                 /* Assign Classification */
                                 classification = (atl08_classification_t)atl08_classed_pc_flag->gt[t][current_atl08_photon];
+
                                 /* Check Classification */
                                 if(classification >= 0 && classification < NUM_ATL08_CLASSES)
                                 {
@@ -543,7 +545,8 @@ void* Atl03Reader::atl06Thread (void* parm)
                         }
 
                         /* Check Photon Signal Confidence Level and Classification */
-                        if(acceptable_classification && (signal_conf_ph.gt[t][current_photon] >= reader->parms->signal_confidence))
+                        int8_t cnf = signal_conf_ph.gt[t][current_photon];
+                        if(acceptable_classification && (cnf >= reader->parms->signal_confidence))
                         {
                             photon_t ph = {
                                 .delta_time = delta_time.gt[t][current_photon],
@@ -551,7 +554,8 @@ void* Atl03Reader::atl06Thread (void* parm)
                                 .longitude = lon_ph.gt[t][current_photon],
                                 .distance = along_track_distance - (reader->parms->extent_length / 2.0),
                                 .height = h_ph.gt[t][current_photon],
-                                .info = (uint32_t)classification
+                                .atl08_class = (uint16_t)classification,
+                                .atl03_cnf = (int16_t)cnf
                             };
                             extent_photons[t].add(ph);
                         }

@@ -18,7 +18,7 @@ runner.check(p1.cnf == icesat2.CNF_NOT_CONSIDERED, "Failed to set signal confide
 print('\n------------------\nTest02: Atl03 Extent Record\n------------------')
 
 recq = msg.subscribe("recq")
-f2 = icesat2.atl03(asset, "ATL03_20200304065203_10470605_003_01.h5", "recq", {}, icesat2.RPT_1)
+f2 = icesat2.atl03(asset, "ATL03_20200304065203_10470605_003_01.h5", "recq", {cnf=4}, icesat2.RPT_1)
 extentrec = recq:recvrecord(3000)
 recq:destroy()
 

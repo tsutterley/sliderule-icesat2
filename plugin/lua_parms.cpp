@@ -41,7 +41,7 @@
  ******************************************************************************/
 
 #define ATL06_DEFAULT_SURFACE_TYPE              SRT_LAND_ICE
-#define ATL06_DEFAULT_SIGNAL_CONFIDENCE         CNF_SURFACE_HIGH
+#define ATL06_DEFAULT_SIGNAL_CONFIDENCE         CNF_BACKGROUND
 #define ATL06_DEFAULT_USE_ATL08_CLASSIFICATION  false
 #define ATL06_DEFAULT_ALONG_TRACK_SPREAD        20.0 // meters
 #define ATL06_DEFAULT_MIN_PHOTON_COUNT          10
